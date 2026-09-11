@@ -48,6 +48,8 @@ Bereits aus Sprint 0 erledigt: Flyway-Migrationen für alle Tabellen (`V1__init.
 
 Manuell + per Playwright-artigem Browser-Test durchgespielt (Register → Logout → falsches Passwort → richtiges Passwort → Admin-Login mit Kunden-Account abgelehnt → Passwort-Reset-Request/Confirm → Login mit neuem Passwort) - lief sauber durch.
 
+**Deploy-Lücke gefunden und behoben:** Der erste Live-Check gegen `https://almo-group.vn-nspace.de` schlug fehl (401 mit Spring-Boot-Default-Security, generiertes In-Memory-Passwort) - die VPS-Container liefen noch auf dem Sprint-0-Build, `SecurityConfig`/`AuthController` fehlten im laufenden Jar, weil `docker compose up -d --build` seit dem Sprint-1-Commit nicht mehr gelaufen war. Nach Rebuild auf dem VPS lief der komplette Auth-Flow live sauber durch, damit ist Sprint 1 jetzt wirklich (nicht nur im Code) fertig. Die Startseite `/` zeigt weiterhin bewusst das Vite-Scaffold (`App.tsx`) - echte Formulare liegen unter `/login`, `/register`, `/admin/login` usw., die Homepage kommt erst in Sprint 2.
+
 **Zwei echte Stolpersteine, die nur beim tatsächlichen Ausführen auffielen (nicht beim Kompilieren):**
 - `Argon2PasswordEncoder` wirft zur Laufzeit `NoClassDefFoundError`, wenn `org.bouncycastle:bcprov-jdk18on` nicht explizit als Dependency drinsteht - Spring Security bündelt die Argon2-Implementierung nicht selbst. Ergänzt in `pom.xml` (Version 1.80, per Maven-Central-API geprüft).
 - `react-router` v8.3.0 exportiert `BrowserRouter`/`Routes`/`Route`/`Link`/`Navigate`/Hooks alle aus dem Hauptpaket `react-router` - **nicht** aufgeteilt auf `react-router/dom` für Komponenten wie ein offizieller Changelog-Eintrag nahelegte. Gegen die tatsächlichen `.d.ts`-Dateien im installierten Paket geprüft und entsprechend korrigiert.
