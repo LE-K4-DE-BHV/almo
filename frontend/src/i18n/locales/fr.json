@@ -1,3 +1,54 @@
 {
-  "app_title": "Almo Bijoux"
+  "app_title": "Almo Bijoux",
+
+  "nav_home": "Accueil",
+  "nav_shop": "Boutique",
+  "nav_account": "Compte",
+  "nav_login": "Connexion",
+
+  "search_placeholder": "Rechercher des produits...",
+
+  "footer_newsletter_title": "Newsletter",
+  "footer_newsletter_placeholder": "Votre adresse e-mail",
+  "footer_newsletter_button": "S'abonner",
+  "footer_shop_title": "Boutique",
+  "footer_account_title": "Compte",
+  "footer_contact_title": "Contact",
+  "footer_legal": "Confidentialité · CGV · Mentions légales",
+  "footer_copyright": "© 2026 Almo Bijoux",
+
+  "home_hero_title": "Des bijoux pour chaque occasion",
+  "home_hero_subtitle": "Bijoux fantaisie haut de gamme, à prix juste.",
+  "home_hero_cta": "Acheter maintenant",
+  "home_categories_title": "Catégories",
+
+  "shop_all_products": "Tous les produits",
+  "shop_all_categories": "Toutes les catégories",
+  "shop_filter_any": "Toutes",
+  "shop_filter_category": "Catégorie",
+  "shop_filter_price": "Prix",
+  "shop_filter_price_min": "Min",
+  "shop_filter_price_max": "Max",
+  "shop_filter_metal": "Métal/Couleur",
+  "shop_filter_availability": "Disponibilité",
+  "shop_filter_apply": "Filtrer",
+  "shop_filter_reset": "Réinitialiser",
+  "shop_sort_default": "Par défaut",
+  "shop_sort_price_asc": "Prix croissant",
+  "shop_sort_price_desc": "Prix décroissant",
+  "shop_sort_name": "Nom",
+  "shop_sort_rating": "Note",
+  "shop_no_products": "Aucun produit trouvé.",
+  "shop_results_count": "{{count}} produit(s)",
+
+  "metal_gold": "Or",
+  "metal_silver": "Argent",
+  "metal_rose_gold": "Or rose",
+  "metal_bicolor": "Bicolore",
+
+  "stock_in_stock": "En stock",
+  "stock_low_stock": "Stock limité",
+  "stock_out_of_stock": "Épuisé",
+
+  "add_to_cart": "Ajouter au panier"
 }

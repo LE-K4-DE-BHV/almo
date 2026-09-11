@@ -97,8 +97,13 @@ public class SecurityConfig {
                     .permitAll()
                     .requestMatchers("/actuator/health")
                     .permitAll()
-                    // Nothing else exists yet (Sprint 2+ adds the product catalog, which will be
-                    // publicly readable - revisit this default once those endpoints land).
+                    // Browsing the catalog needs no account - only GET is opened here; write
+                    // access to these paths (Sprint 5 admin CRUD) will need its own, narrower
+                    // rule once it exists, not a blanket permitAll on the whole path.
+                    .requestMatchers(HttpMethod.GET, "/api/products/**")
+                    .permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/categories/**")
+                    .permitAll()
                     .anyRequest()
                     .authenticated());
     return http.build();

@@ -15,12 +15,24 @@ You do not need Maven or a global Node install - the backend ships a Maven wrapp
 
 ```
 backend/     Spring Boot 4.1 API (Java 25, Maven)
-frontend/    React + TypeScript SPA (Vite, react-i18next)
+frontend/    React + TypeScript SPA (Vite, Tailwind CSS v4, react-router, react-i18next)
 infra/       Deployment references: .env.example, VPS nginx config
 docs/        Specs, backlog, this guide
-almofrontenddesign/   Original static HTML/CSS/JS mockup - source of truth for
-                       look & feel while frontend/ is being built out; not served,
-                       kept for reference during the port (see backlog Sprint 2)
+almofrontenddesign/   Original static HTML/CSS/JS mockup - source of the brand palette/copy
+                       (see frontend/src/index.css's @theme block) and page content while
+                       frontend/ is being rebuilt; not served, kept for reference (backlog Sprint 2)
+```
+
+### Backend package layout
+
+```
+auth/       Login/register/logout/password-reset endpoints and services
+user/       User entity + repository
+security/   SecurityConfig (two filter chains), Argon2 password encoder
+mail/       Brevo transactional email client
+catalog/    Products/categories - read-only, JdbcClient-based (not JPA entities,
+            see Sprint 2 decision in docs/backlog.md), full-text search
+common/     Shared API error shape + exception handling
 ```
 
 ## Running the whole stack locally
@@ -107,6 +119,14 @@ This is the Sprint 0 scope only. Test stages (JUnit/Testcontainers, Vitest, Play
 - Every state-changing request needs the CSRF cookie echoed back as a header. The frontend's `apiFetch` helper (`frontend/src/api/client.ts`) does this automatically - always go through it (or the typed wrappers in `frontend/src/api/auth.ts`) rather than calling `fetch` directly.
 - `frontend/src/auth/` holds the client-side auth state: `AuthContext.ts` (the React context + its type, no JSX), `AuthProvider.tsx` (the component that owns `user`/`loading` state and calls the API), `useAuth.ts` (the hook), `RequireAuth.tsx`/`RequireAdmin.tsx` (route guards). Split into four files instead of one - oxlint's fast-refresh rule wants a file to export either only components or only non-component values, not a mix.
 - Admin accounts aren't created through any UI yet (no self-service admin signup, by design) - promote a user manually for local testing: `UPDATE users SET role='ADMIN' WHERE email='...';` against the `db` container.
+
+## Product catalog (Sprint 2)
+
+- `GET /api/products` and `GET /api/categories` are public (no auth needed), both take a `lang` query param (`de`/`en`/`fr`, defaults to `de`) - the backend returns already-localized strings, the frontend never assembles translations itself.
+- `/api/products` filters: `category` (key), `minPrice`/`maxPrice`, `metalColor`, `availability` (`in_stock`/`low_stock`/`out_of_stock`), `search` (Postgres full-text, see `V3__product_search.sql`), `sort` (`price-asc`/`price-desc`/`name`/`rating`).
+- No products are seeded for real use - only a handful of dev-only test products (`V4__seed_dev_products.sql`, clearly commented as such). Real products come from the admin UI in Sprint 5; don't add more placeholder products by hand, add real ones through that UI once it exists.
+- **Tailwind CSS v4 gotcha**: any custom CSS you add to `frontend/src/index.css` outside a component's own file MUST go inside `@layer base` (or `@layer components`/`@layer utilities`, as appropriate) - unlayered CSS always wins over Tailwind's utilities regardless of specificity, because CSS cascade layers are resolved before specificity. A bare `a { color: red }` at the top level would silently override every `text-*` utility in the app. See the comment in `index.css` for the concrete bug this caused during Sprint 2.
+- Brand colors/fonts live in `frontend/src/index.css`'s `@theme` block (`--color-brand-*`, `--font-brand`) - reference them as Tailwind classes like `bg-brand-bg`, `text-brand-accent`, not as raw hex values in components.
 
 ## Deployment (VPS)
 

@@ -1,5 +1,7 @@
 import { Routes, Route } from 'react-router'
-import App from './App'
+import { Layout } from './components/Layout'
+import { HomePage } from './pages/HomePage'
+import { ShopPage } from './pages/ShopPage'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
@@ -13,23 +15,30 @@ import { RequireAdmin } from './auth/RequireAdmin'
 /**
  * Kept separate from main.tsx so AuthProvider (which needs to sit above this, see main.tsx) isn't
  * forced into the same file as the route table.
+ *
+ * Admin routes deliberately sit outside <Layout> (no shop header/footer) - the admin area is a
+ * separate context, matching the backend's separate /api/admin/auth/* endpoint and filter chain.
  */
 export function AppRouter() {
   return (
     <Routes>
-      <Route path="/" element={<App />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route
-        path="/account"
-        element={
-          <RequireAuth>
-            <AccountPage />
-          </RequireAuth>
-        }
-      />
+      <Route element={<Layout />}>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/shop" element={<ShopPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route
+          path="/account"
+          element={
+            <RequireAuth>
+              <AccountPage />
+            </RequireAuth>
+          }
+        />
+      </Route>
+
       <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route
         path="/admin"

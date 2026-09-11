@@ -59,11 +59,25 @@ Manuell + per Playwright-artigem Browser-Test durchgespielt (Register → Logout
 
 Ziel: Startseite und Shop-Seite laufen auf echten Backend-Daten statt dem statischen `PRODUCTS`-Array.
 
-- [ ] Products/Categories/Translations-API (CRUD, erstmal ohne Admin-UI, direkt über Migration/Seed befüllt)
-- [ ] Produktdaten aus dem Altdesign (`almofrontenddesign/js/products.js`) migrieren, inkl. `metal_color`-Werten pro Produkt
-- [ ] Frontend: Header/Footer/Startseite/Shop-Seite auf API umgestellt
-- [ ] Shop-Seite: Kategorie-Filter (bestand schon), neu dazu: Preis-Range-Filter, Verfügbarkeits-Filter, Metall/Farbe-Filter
-- [ ] Suche (Produktname/Kategorie/Beschreibung) gegen Backend statt Client-seitigem Array-Filter
+### Technische Entscheidungen (festgelegt vor der Implementierung)
+
+- **Keine Platzhalter-Produkte migriert**: die alten `almofrontenddesign/js/products.js`-Eintraege waren nur Mockups, werden nicht uebernommen. Echte Produkte kommen erst durch die Admin-UI in Sprint 5. Kategorien (Ringe/Halsketten/Ohrringe/Armbaender) sind dagegen Taxonomie, nicht Platzhalter-Content, und werden per Migration geseedet.
+- **Dev-only Test-Seed**: eine kleine, klar als "nur zum Testen" markierte Migration (`V4__seed_dev_products.sql`) mit 6 Produkten deckt alle Filter/Status-Faelle ab (Kategorien, Metallfarben, in/low/out-of-stock), bis Sprint 5 echte Daten liefert.
+- **Produktsuche: Postgres-Volltextsuche** (`tsvector`, GIN-Index) statt einfachem `ILIKE` - Entscheidung explizit gegen die urspruengliche Empfehlung getroffen. `'simple'`-Textsuche-Konfiguration (kein Stemming), da `product_translations` DE/EN/FR gemischt in derselben Spalte haelt und ein sprachspezifischer Stemmer die falsche Sprache verstuemmeln wuerde.
+- **CSS: Tailwind CSS v4** (`@tailwindcss/vite`, CSS-first `@theme`-Konfiguration, kein `tailwind.config.js`) statt CSS-Module oder 1:1-Uebernahme des Altdesigns - bewusste Grundsatzentscheidung fuer alle kommenden Seiten. Marke/Palette aus `almofrontenddesign/css/base.css` als `--color-brand-*`-Tokens uebernommen.
+- **Read-Modell ohne JPA**: `/api/products`/`/api/categories` laufen ueber `JdbcClient` (dynamisches SQL, Volltextsuche, korrelierte Rating-Subquery), nicht ueber Spring-Data-JPA-Entities - vermeidet fruehes Hibernate-Mapping von Postgres-Arrays/generated columns fuer einen reinen Read-Endpoint. Sprint 5 fuehrt fuers Admin-CRUD eigene Write-Entities ein.
+
+### Aufgaben
+
+- [x] Products/Categories/Translations-API (read-only, `ProductSearchRepository`/`CategoryRepository` via `JdbcClient`)
+- [x] Kategorien geseedet (`V2__seed_categories.sql`), Volltextsuche-Spalte + GIN-Index (`V3__product_search.sql`), Dev-Testprodukte (`V4__seed_dev_products.sql`)
+- [x] Frontend: Header/Footer/Startseite/Shop-Seite auf API umgestellt (Tailwind-Rebuild, altes Vite-Scaffold `App.tsx` entfernt)
+- [x] Shop-Seite: Kategorie-, Preis-Range-, Verfuegbarkeits-, Metall/Farbe-Filter, alle URL-getrieben (bookmarkbar, wie im Altdesign)
+- [x] Suche (Header-Suchfeld) gegen Backend-Volltextsuche, sprachabhaengig (DE/EN/FR liefern jeweils eigene Treffer)
+
+Durchgetestet: alle Filter/Suche/Sortier-Kombinationen per curl gegen die API, danach der komplette Shop-Flow im echten Browser (Kategorie-Filter, Sprachwechsel DE→EN mit Live-Neuladen der lokalisierten Daten, Suche ueber die Kopfzeile) - lief sauber durch.
+
+**Ein echter Bug gefunden und gefixt, nur im Browser sichtbar:** Tailwind v4 wrapped seine Utilities in CSS Cascade Layers (`@layer ...`). Eine eigene, nicht in ein `@layer` verpackte Regel (`a { color: inherit; }`) hat dadurch *jede* Tailwind-Textfarben-Utility ausgehebelt (z.B. `text-white`), unabhaengig von Spezifitaet - Cascade Layers werden vor Spezifitaet aufgeloest, unlayered CSS gewinnt immer. Sichtbar erst am gerenderten Button (Text unsichtbar, Farbe = Hintergrundfarbe), nicht am Build oder im Code. Fix: eigene Basis-Regeln in `@layer base` verschieben.
 
 ## Sprint 3 - Cart, Wishlist, Produktseite
 

@@ -1,3 +1,54 @@
 {
-  "app_title": "Almo Schmuck"
+  "app_title": "Almo Schmuck",
+
+  "nav_home": "Start",
+  "nav_shop": "Shop",
+  "nav_account": "Konto",
+  "nav_login": "Login",
+
+  "search_placeholder": "Produkte suchen...",
+
+  "footer_newsletter_title": "Newsletter",
+  "footer_newsletter_placeholder": "Deine E-Mail-Adresse",
+  "footer_newsletter_button": "Anmelden",
+  "footer_shop_title": "Shop",
+  "footer_account_title": "Konto",
+  "footer_contact_title": "Kontakt",
+  "footer_legal": "Datenschutz · AGB · Impressum",
+  "footer_copyright": "© 2026 Almo Schmuck",
+
+  "home_hero_title": "Schmuck fuer jeden Anlass",
+  "home_hero_subtitle": "Modeschmuck mit hochwertiger Optik, fair kalkuliert.",
+  "home_hero_cta": "Jetzt shoppen",
+  "home_categories_title": "Kategorien",
+
+  "shop_all_products": "Alle Produkte",
+  "shop_all_categories": "Alle Kategorien",
+  "shop_filter_any": "Alle",
+  "shop_filter_category": "Kategorie",
+  "shop_filter_price": "Preis",
+  "shop_filter_price_min": "Min",
+  "shop_filter_price_max": "Max",
+  "shop_filter_metal": "Metall/Farbe",
+  "shop_filter_availability": "Verfuegbarkeit",
+  "shop_filter_apply": "Filtern",
+  "shop_filter_reset": "Zuruecksetzen",
+  "shop_sort_default": "Standard",
+  "shop_sort_price_asc": "Preis aufsteigend",
+  "shop_sort_price_desc": "Preis absteigend",
+  "shop_sort_name": "Name",
+  "shop_sort_rating": "Bewertung",
+  "shop_no_products": "Keine Produkte gefunden.",
+  "shop_results_count": "{{count}} Produkt(e)",
+
+  "metal_gold": "Gold",
+  "metal_silver": "Silber",
+  "metal_rose_gold": "Rosegold",
+  "metal_bicolor": "Bicolor",
+
+  "stock_in_stock": "Auf Lager",
+  "stock_low_stock": "Wenige auf Lager",
+  "stock_out_of_stock": "Ausverkauft",
+
+  "add_to_cart": "In den Warenkorb"
 }

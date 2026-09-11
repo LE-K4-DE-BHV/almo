@@ -1,3 +1,54 @@
 {
-  "app_title": "Almo Jewelry"
+  "app_title": "Almo Jewelry",
+
+  "nav_home": "Home",
+  "nav_shop": "Shop",
+  "nav_account": "Account",
+  "nav_login": "Login",
+
+  "search_placeholder": "Search products...",
+
+  "footer_newsletter_title": "Newsletter",
+  "footer_newsletter_placeholder": "Your email address",
+  "footer_newsletter_button": "Subscribe",
+  "footer_shop_title": "Shop",
+  "footer_account_title": "Account",
+  "footer_contact_title": "Contact",
+  "footer_legal": "Privacy · Terms · Imprint",
+  "footer_copyright": "© 2026 Almo Jewelry",
+
+  "home_hero_title": "Jewelry for every occasion",
+  "home_hero_subtitle": "Fashion jewelry with a premium look, fairly priced.",
+  "home_hero_cta": "Shop now",
+  "home_categories_title": "Categories",
+
+  "shop_all_products": "All Products",
+  "shop_all_categories": "All Categories",
+  "shop_filter_any": "Any",
+  "shop_filter_category": "Category",
+  "shop_filter_price": "Price",
+  "shop_filter_price_min": "Min",
+  "shop_filter_price_max": "Max",
+  "shop_filter_metal": "Metal/Color",
+  "shop_filter_availability": "Availability",
+  "shop_filter_apply": "Apply",
+  "shop_filter_reset": "Reset",
+  "shop_sort_default": "Default",
+  "shop_sort_price_asc": "Price: low to high",
+  "shop_sort_price_desc": "Price: high to low",
+  "shop_sort_name": "Name",
+  "shop_sort_rating": "Rating",
+  "shop_no_products": "No products found.",
+  "shop_results_count": "{{count}} product(s)",
+
+  "metal_gold": "Gold",
+  "metal_silver": "Silver",
+  "metal_rose_gold": "Rose gold",
+  "metal_bicolor": "Two-tone",
+
+  "stock_in_stock": "In stock",
+  "stock_low_stock": "Low stock",
+  "stock_out_of_stock": "Out of stock",
+
+  "add_to_cart": "Add to cart"
 }
