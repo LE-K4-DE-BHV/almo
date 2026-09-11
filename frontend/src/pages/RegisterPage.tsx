@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useAuth } from '../auth/useAuth'
+import { useCart } from '../cart/useCart'
 import { ApiError } from '../api/client'
 
 export function RegisterPage() {
@@ -10,6 +11,7 @@ export function RegisterPage() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const { register } = useAuth()
+  const { refresh: refreshCart } = useCart()
   const navigate = useNavigate()
 
   async function handleSubmit(e: FormEvent) {
@@ -19,6 +21,7 @@ export function RegisterPage() {
     try {
       // Registering logs the user in immediately (see AuthController.register on the backend).
       await register(email, password, name)
+      await refreshCart() // picks up the guest cart the backend just merged in, see LoginPage
       navigate('/account')
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Registration failed')

@@ -128,6 +128,15 @@ This is the Sprint 0 scope only. Test stages (JUnit/Testcontainers, Vitest, Play
 - **Tailwind CSS v4 gotcha**: any custom CSS you add to `frontend/src/index.css` outside a component's own file MUST go inside `@layer base` (or `@layer components`/`@layer utilities`, as appropriate) - unlayered CSS always wins over Tailwind's utilities regardless of specificity, because CSS cascade layers are resolved before specificity. A bare `a { color: red }` at the top level would silently override every `text-*` utility in the app. See the comment in `index.css` for the concrete bug this caused during Sprint 2.
 - Brand colors/fonts live in `frontend/src/index.css`'s `@theme` block (`--color-brand-*`, `--font-brand`) - reference them as Tailwind classes like `bg-brand-bg`, `text-brand-accent`, not as raw hex values in components.
 
+## Cart, wishlist, reviews (Sprint 3)
+
+- Cart works for guests: `CartController` resolves a `CartOwner` per request - a logged-in user's id, or (for guests) the current `HttpSession` id, created on first touch if none exists yet. Every cart-item lookup in `CartService` checks the item actually belongs to that owner before returning/mutating it (wrong owner -> 404, same as "doesn't exist" - never leaks which ids exist).
+- On login/register, `AuthController` merges the guest cart into the user's account (`CartService.mergeGuestCartIntoUser`) - matching product rows get their quantities summed, others get reassigned. The frontend must call `useCart().refresh()` right after a successful login/register (see `LoginPage`/`RegisterPage`) or the header/cart page keeps showing the stale pre-login state.
+- **Session fixation fix**: `AuthService.persistSession()` now calls `request.changeSessionId()` before saving the security context - the hand-rolled REST login never went through Spring Security's usual filter chain, so nothing used to rotate the session id on login. If you add another custom login path, remember this doesn't happen automatically the way it does for filter-based (e.g. form) logins.
+- Wishlist has no guest mode by design - `wishlist_items` has no `session_id` column (see `V1__init.sql`). `WishlistProvider` only fetches once `useAuth()` reports a logged-in user.
+- Reviews are read-only for now (`GET /api/products/{id}/reviews`) - writing is gated on having bought the product, which needs Sprint 4's `orders` table to check against. Don't add a review-write endpoint before that exists; there'd be nothing real to enforce the purchase check with.
+- `frontend/src/cart/` and `frontend/src/wishlist/` each follow the same three-file split as `frontend/src/auth/` (Context/Provider/hook) for the same fast-refresh reason.
+
 ## Deployment (VPS)
 
 Out of scope for a normal dev workflow - covered in the spec's "Deployment / Infra" section and `infra/nginx/almo-group.vn-nspace.de.conf`. Requires root/SSH access to the shared VPS; not something to run from a local machine. Ask before touching anything server-side, per CLAUDE.md's team-coordination rules.

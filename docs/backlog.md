@@ -83,13 +83,24 @@ Durchgetestet: alle Filter/Suche/Sortier-Kombinationen per curl gegen die API, d
 
 Ziel: Kompletter Produktentdeckungs-Flow bis zum vollen Warenkorb.
 
-- [ ] Cart-API: session-/user-gebunden, Merge des Gast-Warenkorbs beim Login
-- [ ] Wishlist-API (an eingeloggten User gebunden)
-- [ ] Frontend: Warenkorb-Seite (Menge ändern, entfernen, Zwischensumme), Mini-Warenkorb-Flyout im Header
-- [ ] Frontend: Wishlist-Seite
-- [ ] Produktseite: Bildergalerie, Beschreibung, Details, "zuletzt angesehen", Sticky-"In den Warenkorb"-Bar
-- [ ] Reviews-API: nur Käufer dürfen bewerten, Durchschnittsrating berechnet (kein eigenes Feld)
-- [ ] Produktseite: Bewertungsliste + Formular für Käufer
+### Technische Entscheidungen (festgelegt vor der Implementierung)
+
+- **Reviews: nur Lese-Seite jetzt, Schreiben erst Sprint 4.** "Nur Käufer dürfen bewerten" braucht die `orders`-Tabelle, die erst Sprint 4 (Checkout) füllt - vorher gäbe es niemanden, der die Kauf-Pruefung bestehen könnte. `/api/products/{id}/reviews` (GET) und die Durchschnittsrating-Berechnung sind fertig, das Bewertungsformular kommt mit Sprint 4.
+- **Cart-Identität für Gäste: bestehende Spring-Session** (Cookie existiert schon wegen CSRF) statt eigenem Cart-Cookie/Token. `cart_items.session_id` = `HttpSession`-ID.
+
+### Aufgaben
+
+- [x] Cart-API: session-/user-gebunden (`CartOwner`, `CartService`), Merge des Gast-Warenkorbs beim Login/Register
+- [x] Wishlist-API (an eingeloggten User gebunden, kein Gast-Wishlist - `wishlist_items` hat keine `session_id`-Spalte)
+- [x] Frontend: Warenkorb-Seite (Menge ändern, entfernen, Zwischensumme), Mini-Warenkorb-Flyout im Header
+- [x] Frontend: Wishlist-Seite
+- [x] Produktseite: Bildergalerie, Beschreibung, Details, "zuletzt angesehen" (localStorage, client-only), Sticky-"In den Warenkorb"-Bar (mobil)
+- [x] Reviews-API (nur Lesen): Liste + Durchschnittsrating, Schreiben bewusst zurückgestellt (s.o.)
+- [x] `GET /api/products?ids=1,2,3` ergänzt (Bypass der Filter) - für "zuletzt angesehen" im Frontend gebraucht, um Produktkarten für eine feste ID-Liste zu laden
+
+Durchgetestet: kompletter curl-Flow (Gast fügt 2 Produkte hinzu → registriert sich → Warenkorb bleibt erhalten und ist auf den User umgehängt, Merge-Logik bei bereits vorhandenem Produkt, Ownership-Check verhindert Zugriff auf fremde Cart-Items → 404 statt Leak), danach der komplette Flow im echten Browser (Add-to-Cart → Mini-Flyout → Produktseite → Wishlist-Redirect für Gäste → Registrierung → Cart-Merge sichtbar im Header-Badge → Menge ändern → Entfernen).
+
+**Ein echtes Sicherheitsproblem gefunden und gefixt, nicht Teil der urspruenglichen Aufgabe:** Der Login/Register-Flow aus Sprint 1 rotierte die Session-ID beim Login nie (Session Fixation) - weil der Login manuell `AuthenticationManager.authenticate()` aufruft statt durch Spring Securitys Standard-Filterkette zu laufen, die das automatisch übernimmt. Ein Angreifer, der einem Opfer vorher eine Session-ID unterschiebt, hätte nach dessen Login weiterhin eine gültige Session gehabt. Gefixt in `AuthService.persistSession()` via `request.changeSessionId()`, direkt vor dem Speichern des Security-Context - und musste ohnehin gelöst werden, um die Guest-Session-ID vor der Rotation für den Cart-Merge einzufangen.
 
 ## Sprint 4 - Checkout & Bestellablauf
 

@@ -5,6 +5,7 @@ import de.almo.backend.auth.dto.PasswordResetConfirmDto;
 import de.almo.backend.auth.dto.PasswordResetRequestDto;
 import de.almo.backend.auth.dto.RegisterRequest;
 import de.almo.backend.auth.dto.UserResponse;
+import de.almo.backend.cart.CartService;
 import de.almo.backend.user.User;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -25,9 +26,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
   private final AuthService authService;
+  private final CartService cartService;
 
-  public AuthController(AuthService authService) {
+  public AuthController(AuthService authService, CartService cartService) {
     this.authService = authService;
+    this.cartService = cartService;
   }
 
   @PostMapping("/register")
@@ -40,7 +43,11 @@ public class AuthController {
     // (almofrontenddesign/js/auth.js registerUser()) - no separate "please log in" step.
     Authentication authentication =
         authService.authenticate(new LoginRequest(request.email(), request.password()));
+    // Captured before persistSession(), which rotates the session id (session fixation
+    // protection) - the guest cart is filed under the pre-rotation id.
+    String guestSessionId = httpRequest.getSession(true).getId();
     authService.persistSession(authentication, httpRequest, httpResponse);
+    cartService.mergeGuestCartIntoUser(guestSessionId, user.getId());
     return UserResponse.from(user);
   }
 
@@ -50,8 +57,10 @@ public class AuthController {
       HttpServletRequest httpRequest,
       HttpServletResponse httpResponse) {
     Authentication authentication = authService.authenticate(request);
+    String guestSessionId = httpRequest.getSession(true).getId();
     authService.persistSession(authentication, httpRequest, httpResponse);
     User user = authService.findByEmail(authentication.getName());
+    cartService.mergeGuestCartIntoUser(guestSessionId, user.getId());
     return UserResponse.from(user);
   }
 

@@ -1,6 +1,7 @@
 package de.almo.backend.catalog;
 
 import java.sql.Array;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -93,22 +94,95 @@ public class ProductSearchRepository {
       spec = spec.param("search", criteria.search());
     }
 
-    return spec.query(
+    return spec.query(ProductSearchRepository::mapRow).list();
+  }
+
+  /**
+   * Used by cart/wishlist to render product name/price/image/status for a set of ids they only
+   * store as plain foreign keys (see CartItem - no JPA relation to a Product entity). Order of the
+   * input ids is not preserved; callers that need a specific order re-sort by id themselves.
+   */
+  public List<ProductSummary> findSummariesByIds(List<Long> ids, String lang) {
+    if (ids.isEmpty()) return List.of();
+
+    return jdbcClient
+        .sql(
+            """
+            SELECT
+              p.id,
+              c.key AS category_key,
+              ct.name AS category_name,
+              pt.name AS product_name,
+              p.metal_color,
+              p.badge,
+              p.status,
+              p.price,
+              p.compare_at_price,
+              p.image_refs,
+              (SELECT avg(r.rating)::float FROM reviews r
+                WHERE r.product_id = p.id AND r.status = 'PUBLISHED') AS avg_rating,
+              (SELECT count(*) FROM reviews r
+                WHERE r.product_id = p.id AND r.status = 'PUBLISHED') AS review_count
+            FROM products p
+            JOIN categories c ON c.id = p.category_id
+            JOIN category_translations ct ON ct.category_id = c.id AND ct.lang = :lang
+            JOIN product_translations pt ON pt.product_id = p.id AND pt.lang = :lang
+            WHERE p.id IN (:ids)
+            """)
+        .param("lang", lang)
+        .param("ids", ids)
+        .query(ProductSearchRepository::mapRow)
+        .list();
+  }
+
+  /** For the product detail page - full description/details, not just the listing summary. */
+  public java.util.Optional<ProductDetailResponse> findDetailById(long id, String lang) {
+    return jdbcClient
+        .sql(
+            """
+            SELECT
+              p.id,
+              c.key AS category_key,
+              ct.name AS category_name,
+              pt.name AS product_name,
+              pt.description,
+              pt.details,
+              p.metal_color,
+              p.badge,
+              p.status,
+              p.price,
+              p.compare_at_price,
+              p.image_refs,
+              (SELECT avg(r.rating)::float FROM reviews r
+                WHERE r.product_id = p.id AND r.status = 'PUBLISHED') AS avg_rating,
+              (SELECT count(*) FROM reviews r
+                WHERE r.product_id = p.id AND r.status = 'PUBLISHED') AS review_count
+            FROM products p
+            JOIN categories c ON c.id = p.category_id
+            JOIN category_translations ct ON ct.category_id = c.id AND ct.lang = :lang
+            JOIN product_translations pt ON pt.product_id = p.id AND pt.lang = :lang
+            WHERE p.id = :id
+            """)
+        .param("id", id)
+        .param("lang", lang)
+        .query(
             (rs, rowNum) ->
-                new ProductSummary(
+                new ProductDetailResponse(
                     rs.getLong("id"),
                     rs.getString("category_key"),
                     rs.getString("category_name"),
                     rs.getString("product_name"),
+                    rs.getString("description"),
+                    toStringList(rs.getArray("details")),
                     rs.getString("metal_color"),
                     rs.getString("badge"),
                     rs.getString("status"),
                     rs.getBigDecimal("price"),
                     rs.getBigDecimal("compare_at_price"),
                     toStringList(rs.getArray("image_refs")),
-                    (Double) rs.getObject("avg_rating"), // nullable - no PUBLISHED reviews yet
+                    (Double) rs.getObject("avg_rating"),
                     rs.getLong("review_count")))
-        .list();
+        .optional();
   }
 
   /**
@@ -132,6 +206,22 @@ public class ProductSearchRepository {
       case "rating" -> "avg_rating DESC NULLS LAST";
       default -> "p.id DESC";
     };
+  }
+
+  private static ProductSummary mapRow(ResultSet rs, int rowNum) throws SQLException {
+    return new ProductSummary(
+        rs.getLong("id"),
+        rs.getString("category_key"),
+        rs.getString("category_name"),
+        rs.getString("product_name"),
+        rs.getString("metal_color"),
+        rs.getString("badge"),
+        rs.getString("status"),
+        rs.getBigDecimal("price"),
+        rs.getBigDecimal("compare_at_price"),
+        toStringList(rs.getArray("image_refs")),
+        (Double) rs.getObject("avg_rating"), // nullable - no PUBLISHED reviews yet
+        rs.getLong("review_count"));
   }
 
   private static List<String> toStringList(Array sqlArray) {

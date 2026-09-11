@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useAuth } from '../auth/useAuth'
+import { useCart } from '../cart/useCart'
 import { ApiError } from '../api/client'
 
 /**
@@ -14,6 +15,7 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const { login } = useAuth()
+  const { refresh: refreshCart } = useCart()
   const navigate = useNavigate()
 
   async function handleSubmit(e: FormEvent) {
@@ -22,6 +24,10 @@ export function LoginPage() {
     setSubmitting(true)
     try {
       await login(email, password)
+      // Picks up whatever the backend just merged the guest cart into (see
+      // CartService.mergeGuestCartIntoUser) - without this the header/cart page would keep
+      // showing the pre-login guest cart until something else happened to refetch it.
+      await refreshCart()
       navigate('/account')
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Login failed')

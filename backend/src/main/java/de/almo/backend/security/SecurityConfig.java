@@ -104,6 +104,11 @@ public class SecurityConfig {
                     .permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/categories/**")
                     .permitAll()
+                    // Guests need a cart too, not just logged-in customers - CartController
+                    // resolves a session-bound owner for them and every lookup in CartService
+                    // checks ownership, so permitAll here doesn't mean "anyone's cart".
+                    .requestMatchers("/api/cart/**")
+                    .permitAll()
                     .anyRequest()
                     .authenticated());
     return http.build();

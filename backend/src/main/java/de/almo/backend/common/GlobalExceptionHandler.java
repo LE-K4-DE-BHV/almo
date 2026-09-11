@@ -2,6 +2,8 @@ package de.almo.backend.common;
 
 import de.almo.backend.auth.EmailAlreadyRegisteredException;
 import de.almo.backend.auth.InvalidResetTokenException;
+import de.almo.backend.cart.CartItemNotFoundException;
+import de.almo.backend.catalog.ProductNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -25,6 +27,16 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(InvalidResetTokenException.class)
   public ResponseEntity<ApiError> handleInvalidResetToken(InvalidResetTokenException e) {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiError(e.getMessage()));
+  }
+
+  @ExceptionHandler(ProductNotFoundException.class)
+  public ResponseEntity<ApiError> handleProductNotFound(ProductNotFoundException e) {
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiError(e.getMessage()));
+  }
+
+  @ExceptionHandler(CartItemNotFoundException.class)
+  public ResponseEntity<ApiError> handleCartItemNotFound(CartItemNotFoundException e) {
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiError(e.getMessage()));
   }
 
   @ExceptionHandler(BadCredentialsException.class)

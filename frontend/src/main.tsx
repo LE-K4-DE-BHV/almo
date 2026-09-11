@@ -7,13 +7,20 @@ import './index.css'
 // available instead of flashing untranslated keys.
 import './i18n'
 import { AuthProvider } from './auth/AuthProvider'
+import { CartProvider } from './cart/CartProvider'
+import { WishlistProvider } from './wishlist/WishlistProvider'
 import { AppRouter } from './AppRouter'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <AppRouter />
+        <CartProvider>
+          {/* Needs useAuth (see WishlistProvider), so must sit inside AuthProvider. */}
+          <WishlistProvider>
+            <AppRouter />
+          </WishlistProvider>
+        </CartProvider>
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>,

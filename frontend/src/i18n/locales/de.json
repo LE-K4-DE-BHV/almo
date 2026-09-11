@@ -50,5 +50,29 @@
   "stock_low_stock": "Wenige auf Lager",
   "stock_out_of_stock": "Ausverkauft",
 
-  "add_to_cart": "In den Warenkorb"
+  "add_to_cart": "In den Warenkorb",
+  "add_to_wishlist": "Zur Wunschliste",
+  "buy_now": "Jetzt kaufen",
+
+  "nav_cart": "Warenkorb",
+  "nav_wishlist": "Wunschliste",
+
+  "cart_title": "Warenkorb",
+  "cart_empty": "Dein Warenkorb ist leer.",
+  "cart_subtotal": "Zwischensumme",
+  "cart_quantity": "Menge",
+  "cart_remove": "Entfernen",
+  "cart_checkout": "Zur Kasse",
+  "cart_checkout_soon": "Checkout kommt in Sprint 4",
+  "cart_continue_shopping": "Weiter einkaufen",
+
+  "wishlist_title": "Wunschliste",
+  "wishlist_empty": "Deine Wunschliste ist leer.",
+
+  "product_details_title": "Details",
+  "product_reviews_title": "Bewertungen",
+  "product_reviews_empty": "Noch keine Bewertungen.",
+  "product_reviews_write_soon": "Bewertungen abgeben kommt in Sprint 4, sobald Bestellungen existieren.",
+  "product_recently_viewed_title": "Zuletzt angesehen",
+  "reviews_count": "{{count}} Bewertung(en)"
 }

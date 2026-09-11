@@ -20,6 +20,23 @@ export type Product = {
   reviewCount: number
 }
 
+export type ProductDetail = {
+  id: number
+  categoryKey: string
+  categoryName: string
+  name: string
+  description: string | null
+  details: string[]
+  metalColor: string | null
+  badge: string | null
+  status: 'in_stock' | 'low_stock' | 'out_of_stock'
+  price: number
+  compareAtPrice: number | null
+  imageRefs: string[]
+  avgRating: number | null
+  reviewCount: number
+}
+
 export type ProductFilters = {
   lang: string
   category?: string
@@ -45,4 +62,15 @@ export function fetchProducts(filters: ProductFilters) {
   if (filters.search) params.set('search', filters.search)
   if (filters.sort) params.set('sort', filters.sort)
   return apiFetch<Product[]>(`/api/products?${params.toString()}`)
+}
+
+export function fetchProduct(id: number, lang: string) {
+  return apiFetch<ProductDetail>(`/api/products/${id}?lang=${encodeURIComponent(lang)}`)
+}
+
+export function fetchProductsByIds(ids: number[], lang: string) {
+  if (ids.length === 0) return Promise.resolve<Product[]>([])
+  return apiFetch<Product[]>(
+    `/api/products?lang=${encodeURIComponent(lang)}&ids=${ids.join(',')}`,
+  )
 }

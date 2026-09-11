@@ -88,6 +88,16 @@ public class AuthService {
    */
   public void persistSession(
       Authentication authentication, HttpServletRequest request, HttpServletResponse response) {
+    // Session fixation protection: rotate the session id on privilege change (anonymous ->
+    // authenticated). Spring Security does this automatically for filter-based logins
+    // (form login, etc.) via SessionAuthenticationStrategy, but this is a hand-rolled REST login
+    // that never goes through that filter, so nothing rotated the id until this line was added -
+    // an attacker who planted a session id before login would otherwise keep a valid session
+    // after the victim logs in. Callers that need the pre-login (guest) session id for their own
+    // purposes - e.g. CartService's guest-cart merge - must capture it before calling this.
+    request.getSession(true);
+    request.changeSessionId();
+
     SecurityContext context = SecurityContextHolder.createEmptyContext();
     context.setAuthentication(authentication);
     SecurityContextHolder.setContext(context);
