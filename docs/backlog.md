@@ -13,11 +13,11 @@ Lokal erledigt (siehe Commit-Historie):
 - [x] `docker-compose.yml` (lokal): Postgres, Redis, Backend, Frontend - einmal komplett hochgefahren und verifiziert (Flyway-Migration lief gegen echtes Postgres, `/actuator/health` und Frontend beide erreichbar)
 - [x] Flyway eingebunden, Baseline-Migration mit komplettem Schema aus der Spec (nicht nur leer, da Datenmodell schon feststand)
 - [x] CI-Pipeline-Grundgerüst: Lint-Stufe (`.github/workflows/ci.yml`) - Frontend: oxlint + Build, Backend: Spotless-Check + Compile
-- [ ] nginx-Block für `almo-group.vn-nspace.de` auf dem VPS eintragen (Referenzdatei liegt fertig unter `infra/nginx/almo-group.vn-nspace.de.conf`), `certbot` für TLS
-- [ ] Ports auf dem VPS gegen `docker ps` geprüft, `.env`-Datei auf dem VPS angelegt (Vorlage: `infra/.env.example`)
-- [ ] Einmal `docker compose up -d` auf dem VPS durchspielen, Platzhalter-Seite unter der Subdomain erreichbar
+- [x] nginx-Block für `almo-group.vn-nspace.de` auf dem VPS eingetragen, `certbot` für TLS durchgelaufen (echtes Let's-Encrypt-Zertifikat, gültig bis 10.12.2026)
+- [x] Ports auf dem VPS gegen `docker ps` geprüft (8093/8094 frei), `.env` auf dem VPS angelegt (Werte aus `infra/.env.example`, DB-Passwort frisch generiert, Brevo/Cloudinary-Keys ergänzt)
+- [x] `docker compose up -d` auf dem VPS durchgespielt, DNS-A-Record für `almo-group.vn-nspace.de` gesetzt, Seite unter https://almo-group.vn-nspace.de erreichbar (React-Startseite lädt)
 
-Die drei offenen Punkte brauchen root/SSH-Zugriff auf den VPS und werden separat gemacht, sobald der Server-Zugriff ansteht.
+Sprint 0 ist damit komplett fertig.
 
 Abweichung von der ursprünglichen Sprint-0-Planung: Frontend-Lint läuft über `oxlint` statt `ESLint` (moderner Vite-Default, spart Konfigaufwand) - CI-Workflow spiegelt das wider. Falls explizit ESLint gewünscht ist, kurz Bescheid geben.
 
