@@ -1,0 +1,53 @@
+import { apiFetch } from './client'
+
+export type Role = 'CUSTOMER' | 'ADMIN'
+
+export type UserResponse = {
+  id: number
+  email: string
+  name: string
+  role: Role
+}
+
+export function register(email: string, password: string, name: string) {
+  return apiFetch<UserResponse>('/api/auth/register', {
+    method: 'POST',
+    body: { email, password, name },
+  })
+}
+
+export function login(email: string, password: string) {
+  return apiFetch<UserResponse>('/api/auth/login', {
+    method: 'POST',
+    body: { email, password },
+  })
+}
+
+export function adminLogin(email: string, password: string) {
+  return apiFetch<UserResponse>('/api/admin/auth/login', {
+    method: 'POST',
+    body: { email, password },
+  })
+}
+
+export function logout() {
+  return apiFetch<void>('/api/auth/logout', { method: 'POST' })
+}
+
+export function me() {
+  return apiFetch<UserResponse>('/api/auth/me')
+}
+
+export function requestPasswordReset(email: string) {
+  return apiFetch<void>('/api/auth/password-reset/request', {
+    method: 'POST',
+    body: { email },
+  })
+}
+
+export function confirmPasswordReset(token: string, newPassword: string) {
+  return apiFetch<void>('/api/auth/password-reset/confirm', {
+    method: 'POST',
+    body: { token, newPassword },
+  })
+}

@@ -27,13 +27,31 @@ Zusätzlich erledigt: Java auf dem Backend von 21 auf 25 (LTS) gewechselt (siehe
 
 Ziel: Login/Register/Logout funktioniert gegen echtes Backend, komplettes DB-Schema steht.
 
-- [ ] Flyway-Migrationen für alle Tabellen aus dem Datenmodell (inkl. `password_reset_tokens`, `contact_preference`/`shipping_cost` auf `orders`)
-- [ ] Spring Security Session-Auth: Register, Login, Logout (Cookie `SameSite=Lax`, `Secure`)
-- [ ] Redis als Spring-Session-Store angebunden
-- [ ] Passwort-Hashing (BCrypt o.ä.)
-- [ ] Admin-Rolle + **eigener Admin-Login-Pfad** (getrennt vom Kunden-Login)
-- [ ] Passwort-Reset-Flow: Token anlegen, Reset-Mail über Brevo, Token einlösen
-- [ ] Frontend: Login/Register-Formulare gegen echte API, Session-Handling ersetzt `localStorage`-Auth aus dem Altdesign
+Bereits aus Sprint 0 erledigt: Flyway-Migrationen für alle Tabellen (`V1__init.sql`, inkl. `password_reset_tokens`, `contact_preference`/`shipping_cost` auf `orders`), Redis als Spring-Session-Store angebunden (noch ungetestet mit echter Login-Logik).
+
+### Technische Entscheidungen (festgelegt vor der Implementierung)
+
+- **Passwort-Hashing: Argon2id**, explizit als `Argon2PasswordEncoder`-Bean konfiguriert (nicht der Bcrypt-Default von `PasswordEncoderFactories.createDelegatingPasswordEncoder()`) - aktuelle OWASP-Empfehlung (Stand 2024+), bcrypt ist zwar weiterhin akzeptabel, aber nicht mehr Erstempfehlung.
+- **Admin-Auth-Trennung**: gleiche `users`-Tabelle mit `role`-Spalte bleibt, es geht nur um den Auth-Mechanismus. Eigener Endpoint `POST /api/admin/auth/login` prüft nach erfolgreicher Authentifizierung zusätzlich `role = ADMIN` (falsche Rolle → 403, obwohl Credentials stimmen). Eigene `@Order`-Security-Filter-Chain sichert `/api/admin/**` ab, separat von der Kunden-Filter-Chain für den Rest von `/api/**`. Gleicher Session-Cookie-Mechanismus wie bei Kunden, kein zweiter Cookie-Name.
+- **CSRF-Schutz**: `CookieCsrfTokenRepository` (httpOnly=false) zusätzlich zum `SameSite=Lax`-Session-Cookie aus der Spec - Frontend liest den CSRF-Token aus dem Cookie und schickt ihn bei state-changing Requests als Header mit.
+- **Passwort-Reset-Token**: 1 Stunde Gültigkeit ab Erstellung.
+- **API-Pfade**: `/api/auth/*` für Kunden-Login/Register/Logout/Reset, `/api/admin/auth/*` für Admin-Login - konsistent mit der Filter-Chain-Trennung.
+
+### Aufgaben
+
+- [x] `User`-Entity/Repository, `PasswordResetToken`-Entity/Repository
+- [x] `Argon2PasswordEncoder`-Bean, Security-Config mit zwei Filter-Chains (`/api/admin/**` vs. Rest), CSRF-Cookie-Konfiguration (`.csrf(csrf -> csrf.spa())`, Spring Security 7 Kurzform)
+- [x] Endpunkte: `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/logout`, `POST /api/auth/password-reset/request`, `POST /api/auth/password-reset/confirm`
+- [x] Endpunkt: `POST /api/admin/auth/login` (gleicher Mechanismus + Rollenprüfung, Rolle wird vor Session-Erstellung geprüft)
+- [x] Passwort-Reset-Mail über Brevo (Token-Link, 1h Ablauf, kein API-Key lokal → `BrevoMailService` loggt statt zu senden)
+- [x] Frontend: Login-/Register-/Admin-Login-/Forgot-Password-/Reset-Password-Formulare gegen echte API, `AuthProvider`+`useAuth` ersetzt `localStorage`-Auth aus dem Altdesign, Routing über `react-router` v8, `RequireAuth`/`RequireAdmin`-Guards
+
+Manuell + per Playwright-artigem Browser-Test durchgespielt (Register → Logout → falsches Passwort → richtiges Passwort → Admin-Login mit Kunden-Account abgelehnt → Passwort-Reset-Request/Confirm → Login mit neuem Passwort) - lief sauber durch.
+
+**Zwei echte Stolpersteine, die nur beim tatsächlichen Ausführen auffielen (nicht beim Kompilieren):**
+- `Argon2PasswordEncoder` wirft zur Laufzeit `NoClassDefFoundError`, wenn `org.bouncycastle:bcprov-jdk18on` nicht explizit als Dependency drinsteht - Spring Security bündelt die Argon2-Implementierung nicht selbst. Ergänzt in `pom.xml` (Version 1.80, per Maven-Central-API geprüft).
+- `react-router` v8.3.0 exportiert `BrowserRouter`/`Routes`/`Route`/`Link`/`Navigate`/Hooks alle aus dem Hauptpaket `react-router` - **nicht** aufgeteilt auf `react-router/dom` für Komponenten wie ein offizieller Changelog-Eintrag nahelegte. Gegen die tatsächlichen `.d.ts`-Dateien im installierten Paket geprüft und entsprechend korrigiert.
+- `erasableSyntaxOnly` im Frontend-`tsconfig` verbietet Parameter-Property-Shorthand (`constructor(public readonly x: T)`) - betrifft jede neue TS-Klasse mit Constructor-Feldern, nicht nur diesen Sprint.
 
 ## Sprint 2 - Produktkatalog live
 

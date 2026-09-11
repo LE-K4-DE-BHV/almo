@@ -84,6 +84,16 @@
 			<artifactId>lombok</artifactId>
 			<optional>true</optional>
 		</dependency>
+		<!-- Argon2PasswordEncoder (see SecurityConfig) delegates to Bouncy Castle for the actual
+		     Argon2 algorithm - it's not bundled in spring-security-crypto itself, so without this
+		     the app throws NoClassDefFoundError the first time a password is hashed. Version isn't
+		     Spring-Boot-managed (not in its BOM), pinned here directly - check
+		     https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk18on before bumping. -->
+		<dependency>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcprov-jdk18on</artifactId>
+			<version>1.80</version>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator-test</artifactId>

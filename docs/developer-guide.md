@@ -61,7 +61,9 @@ npm install
 npm run dev
 ```
 
-Point it at a locally running backend by adjusting the dev server proxy in `vite.config.ts` once the frontend actually calls the API (not wired up yet in Sprint 0).
+`vite.config.ts` already proxies `/api/*` to `http://localhost:8094` (see the `server.proxy` block), so `npm run dev` talks to a backend running on the default port with no extra setup - just make sure something's actually listening there (`docker compose up -d db redis backend`, or `./mvnw spring-boot:run`).
+
+The Docker-built frontend (`docker compose up`) also proxies `/api/*`, via nginx this time (`frontend/nginx.conf`) - so the full stack works standalone through `docker compose up` alone, without needing `npm run dev` at all. That nginx block mirrors what the VPS-level nginx does in production (see `infra/nginx`).
 
 ## Database migrations
 
@@ -96,6 +98,15 @@ This is the Sprint 0 scope only. Test stages (JUnit/Testcontainers, Vitest, Play
 - Local/VPS runtime config lives in a `.env` file next to `docker-compose.yml`, copied from `infra/.env.example` and never committed (see `.gitignore`).
 - CI-only secrets (deploy SSH key etc.) go in GitHub Actions repository secrets, not in `.env`.
 - Never commit real Brevo/Cloudinary keys or DB passwords, including in this doc's examples.
+- Local dev without HTTPS: add `COOKIE_SECURE=false` to your `.env` (see the comment in `infra/.env.example`) - the session cookie is `Secure` by default (right for the VPS, wrong for plain `http://localhost`).
+- No `BREVO_API_KEY` set → password-reset emails aren't actually sent, `BrevoMailService` just logs a warning with the recipient/subject instead. Fine for local dev; check the backend logs to see the reset link it would have sent.
+
+## Authentication (Sprint 1)
+
+- Session-cookie auth, not JWT - see the spec and the Sprint 1 "Technische Entscheidungen" in `docs/backlog.md` for why (Argon2id hashing, two separate Spring Security filter chains for `/api/admin/**` vs. everything else, CSRF via `.csrf(csrf -> csrf.spa())`).
+- Every state-changing request needs the CSRF cookie echoed back as a header. The frontend's `apiFetch` helper (`frontend/src/api/client.ts`) does this automatically - always go through it (or the typed wrappers in `frontend/src/api/auth.ts`) rather than calling `fetch` directly.
+- `frontend/src/auth/` holds the client-side auth state: `AuthContext.ts` (the React context + its type, no JSX), `AuthProvider.tsx` (the component that owns `user`/`loading` state and calls the API), `useAuth.ts` (the hook), `RequireAuth.tsx`/`RequireAdmin.tsx` (route guards). Split into four files instead of one - oxlint's fast-refresh rule wants a file to export either only components or only non-component values, not a mix.
+- Admin accounts aren't created through any UI yet (no self-service admin signup, by design) - promote a user manually for local testing: `UPDATE users SET role='ADMIN' WHERE email='...';` against the `db` container.
 
 ## Deployment (VPS)
 

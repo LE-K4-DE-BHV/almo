@@ -38,7 +38,13 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       SERVER_PORT: 8094
+      # true by default (safe for the VPS, which is always fronted by TLS via nginx); set
+      # COOKIE_SECURE=false in your local .env for plain-HTTP dev, see infra/.env.example.
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8093}
       BREVO_API_KEY: ${BREVO_API_KEY:-}
+      BREVO_SENDER_EMAIL: ${BREVO_SENDER_EMAIL:-no-reply@almo-group.vn-nspace.de}
+      BREVO_SENDER_NAME: ${BREVO_SENDER_NAME:-Almo Schmuck}
       CLOUDINARY_URL: ${CLOUDINARY_URL:-}
     # Bound to 127.0.0.1 only: reachable from this machine and from nginx
     # (which also runs on the host), never directly from the internet - nginx
