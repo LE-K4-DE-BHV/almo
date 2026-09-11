@@ -1,0 +1,2 @@
+Resume this session with:
+claude --resume 2718be35-1503-4533-8e33-8c5d1191dc53

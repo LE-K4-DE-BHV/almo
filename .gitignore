@@ -21,3 +21,34 @@ rad.json
 *.flf
 #Test results file
 TestResults.xml
+
+### Frontend (React/Vite/Node) ###
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+### Backend (Java/Spring Boot/Maven) ###
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+*.class
+*.jar
+!backend/.mvn/wrapper/maven-wrapper.jar
+
+### Env / Secrets ###
+.env
+.env.*
+!.env.example
+
+### IDE ###
+.idea/
+*.iml
+.DS_Store
+
+### Docker ###
+infra/**/pgdata/
+
+### Sonstiges ###
+sesclaude.txt

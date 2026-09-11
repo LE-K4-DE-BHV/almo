@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login &mdash; Almo Schmuck</title>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/header.css">
+<link rel="stylesheet" href="css/footer.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/pages.css">
+<link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<div class="auth-wrap">
+  <h1 id="login-title"></h1>
+  <p class="sub" id="login-sub"></p>
+  <div class="auth-error" id="auth-error" hidden></div>
+  <form id="login-form">
+    <div class="field">
+      <label for="email" id="email-label"></label>
+      <input type="email" id="email" required autocomplete="email">
+    </div>
+    <div class="field">
+      <label for="password" id="password-label"></label>
+      <input type="password" id="password" required autocomplete="current-password" minlength="4">
+    </div>
+    <button type="submit" class="btn btn-block" id="login-btn"></button>
+  </form>
+  <p class="auth-switch"><span id="no-account"></span> <a href="register.html" id="register-now"></a></p>
+</div>
+
+<div id="site-footer"></div>
+
+<script src="js/i18n.js"></script>
+<script src="js/products.js"></script>
+<script src="js/products-i18n.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/wishlist.js"></script>
+<script src="js/recently-viewed.js"></script>
+<script src="js/main.js"></script>
+<script>
+  renderHeader();
+  renderFooter();
+
+  document.title = t("login_title") + " — Almo Schmuck";
+  document.getElementById("login-title").textContent = t("login_title");
+  document.getElementById("login-sub").textContent = t("login_sub");
+  document.getElementById("email-label").textContent = t("email_label");
+  document.getElementById("password-label").textContent = t("password_label");
+  document.getElementById("login-btn").textContent = t("login_btn");
+  document.getElementById("no-account").textContent = t("no_account");
+  document.getElementById("register-now").textContent = t("register_now");
+
+  document.getElementById("login-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+    const errorBox = document.getElementById("auth-error");
+
+    if (!email || password.length < 4) {
+      errorBox.textContent = t("auth_error");
+      errorBox.hidden = false;
+      return;
+    }
+
+    const result = loginUser(email, password);
+    if (!result.ok) {
+      errorBox.textContent = t("login_error_invalid");
+      errorBox.hidden = false;
+      return;
+    }
+
+    const redirect = qs("redirect") || "account.html";
+    window.location.href = redirect;
+  });
+</script>
+</body>
+</html>

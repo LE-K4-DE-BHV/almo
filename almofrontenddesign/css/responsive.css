@@ -1,0 +1,114 @@
+/* Below this width the nav links no longer fit next to the compact icon actions,
+   so they collapse into a slide-in drawer instead of wrapping/overflowing. */
+@media (max-width: 1140px) {
+  .nav-toggle { display: block; }
+  .site-header .wrap { position: relative; }
+
+  /* Dark overlay behind the drawer, click to close */
+  .nav-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 17, 12, .45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s ease;
+    z-index: 150;
+  }
+  .nav-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* The drawer itself: fixed panel sliding in from the right */
+  .main-nav {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(320px, 84vw);
+    background: var(--color-surface);
+    flex-direction: column;
+    gap: 0;
+    padding: 0 24px 24px;
+    overflow-y: auto;
+    box-shadow: -12px 0 32px rgba(20, 17, 12, .12);
+    transform: translateX(100%);
+    transition: transform .3s ease;
+    z-index: 200;
+  }
+  .main-nav.open { transform: translateX(0); }
+
+  .nav-drawer-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    background: var(--color-surface);
+    padding: 20px 0 16px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .nav-drawer-title {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .nav-links {
+    display: flex;
+    flex-direction: column;
+  }
+  .main-nav a { padding: 13px 0; border-bottom: 1px solid var(--color-border); font-size: 15px; }
+  .main-nav a.active { color: var(--color-accent-dark); border-color: var(--color-accent); }
+
+  .nav-extra {
+    display: block;
+    margin-top: 6px;
+    padding-top: 18px;
+  }
+
+  body.nav-open { overflow: hidden; }
+
+  .categories { grid-template-columns: repeat(2, 1fr); }
+  .product-grid { grid-template-columns: repeat(2, 1fr); }
+  .product-detail { grid-template-columns: 1fr; }
+  .product-detail-media { position: static; }
+  .cart-layout { grid-template-columns: 1fr; }
+  .footer-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* On narrow phones, the search + cart icons are the only header actions that
+   still fit next to the logo and hamburger button. Language switch, account/
+   login and wishlist move into the nav dropdown instead (see .nav-extra). */
+@media (max-width: 520px) {
+  .action-collapsible { display: none !important; }
+  .product-grid { grid-template-columns: repeat(2, 1fr); gap: 16px 12px; }
+  .hero { padding: 64px 20px; }
+  .footer-grid { grid-template-columns: 1fr; }
+}
+
+/* Cart line: the fixed-width quantity stepper doesn't leave enough room next
+   to name + price + remove-link on narrow phones, so move it to its own
+   full-width row instead of squeezing everything into one line. */
+@media (max-width: 600px) {
+  .cart-line {
+    grid-template-columns: 72px 1fr;
+    grid-template-areas: "thumb info" "actions actions";
+    row-gap: 14px;
+  }
+  .cart-line .cart-thumb {
+    grid-area: thumb;
+    width: 72px;
+    height: 72px;
+  }
+  .cart-line-info { grid-area: info; }
+  .cart-line-actions {
+    grid-area: actions;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}

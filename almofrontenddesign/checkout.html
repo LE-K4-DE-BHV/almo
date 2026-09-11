@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kasse &mdash; Almo Schmuck</title>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/header.css">
+<link rel="stylesheet" href="css/footer.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/pages.css">
+<link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <h2 id="checkout-title"></h2>
+    </div>
+    <div id="checkout-root"></div>
+  </div>
+</section>
+
+<div id="site-footer"></div>
+
+<script src="js/i18n.js"></script>
+<script src="js/products.js"></script>
+<script src="js/products-i18n.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/wishlist.js"></script>
+<script src="js/recently-viewed.js"></script>
+<script src="js/orders.js"></script>
+<script src="js/main.js"></script>
+<script>
+  renderHeader();
+  renderFooter();
+  requireLogin("checkout.html");
+  document.title = t("checkout_title") + " — Almo Schmuck";
+  document.getElementById("checkout-title").textContent = t("checkout_title");
+
+  const root = document.getElementById("checkout-root");
+  const cart = getCart();
+
+  if (cart.length === 0) {
+    root.innerHTML = `
+      <div class="empty-state">
+        <h2>${t("cart_empty_title")}</h2>
+        <a href="shop.html" class="btn">${t("shop_now")}</a>
+      </div>`;
+  } else {
+    const total = getCartTotal();
+    root.innerHTML = `
+      <div class="cart-layout">
+        <div>
+          <div class="field">
+            <label for="fullname">${t("name_label")}</label>
+            <input type="text" id="fullname" placeholder="${t("fullname_placeholder")}" required>
+          </div>
+          <div class="field">
+            <label for="address">${t("address_label")}</label>
+            <input type="text" id="address" placeholder="${t("address_placeholder")}" required>
+          </div>
+          <div class="field">
+            <label for="city">${t("city_label")}</label>
+            <input type="text" id="city" placeholder="${t("city_placeholder")}" required>
+          </div>
+          <div class="field">
+            <label>${t("payment_label")}</label>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-top:6px">
+              <label style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:400">
+                <input type="radio" name="payment" value="Kreditkarte" checked> ${t("payment_cc")}
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:400">
+                <input type="radio" name="payment" value="PayPal"> ${t("payment_paypal")}
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:400">
+                <input type="radio" name="payment" value="Rechnung"> ${t("payment_invoice")}
+              </label>
+            </div>
+          </div>
+          <button class="btn" id="place-order">${t("place_order_btn")}</button>
+          <div class="form-msg" id="order-msg"></div>
+        </div>
+        <div class="cart-summary">
+          <h2>${t("summary_title")}</h2>
+          <div class="summary-row"><span>${t("order_items")}</span><span>${getCartCount()}</span></div>
+          <div class="summary-row total"><span>${t("total")}</span><span>${formatPrice(total >= 30 ? total : total + 3.9)}</span></div>
+        </div>
+      </div>
+    `;
+
+    document.getElementById("place-order").addEventListener("click", () => {
+      const fullname = document.getElementById("fullname").value.trim();
+      const address = document.getElementById("address").value.trim();
+      const city = document.getElementById("city").value.trim();
+      const msg = document.getElementById("order-msg");
+      if (!fullname || !address || !city) {
+        msg.textContent = t("order_fill_all");
+        return;
+      }
+      const payment = document.querySelector('input[name="payment"]:checked').value;
+      const user = getCurrentUser();
+      const orderNumber = generateOrderNumber();
+      const finalTotal = total >= 30 ? total : total + 3.9;
+
+      saveOrder({
+        orderNumber,
+        email: user.email,
+        date: new Date().toISOString(),
+        items: cart.map((item) => ({ id: item.id, qty: item.qty })),
+        total: finalTotal,
+        payment,
+        address: `${address}, ${city}`
+      });
+
+      saveCart([]);
+      document.getElementById("checkout-root").innerHTML = `
+        <div class="empty-state">
+          <h2>${t("order_success_title")}</h2>
+          <p>${t("order_success_text", { orderNumber, email: '<span data-user-email></span>' })}</p>
+          <a href="account.html" class="btn">${t("view_orders")}</a>
+          <a href="shop.html" class="btn btn-outline" style="margin-left:10px">${t("continue_shopping")}</a>
+        </div>`;
+      updateAuthUI();
+    });
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alle Produkte &mdash; Almo Schmuck</title>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/header.css">
+<link rel="stylesheet" href="css/footer.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/pages.css">
+<link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <h2 id="page-title"></h2>
+    </div>
+    <div class="filters-bar" id="filters"></div>
+    <div class="shop-toolbar">
+      <div class="result-count" id="result-count"></div>
+      <select class="sort-select" id="sort-select">
+        <option value="default" data-t="sort_default"></option>
+        <option value="price-asc" data-t="sort_price_asc"></option>
+        <option value="price-desc" data-t="sort_price_desc"></option>
+        <option value="rating" data-t="sort_rating"></option>
+        <option value="name" data-t="sort_name"></option>
+      </select>
+    </div>
+    <div class="product-grid" id="product-grid"></div>
+  </div>
+</section>
+
+<div id="site-footer"></div>
+
+<script src="js/i18n.js"></script>
+<script src="js/products.js"></script>
+<script src="js/products-i18n.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/wishlist.js"></script>
+<script src="js/recently-viewed.js"></script>
+<script src="js/main.js"></script>
+<script>
+  renderHeader("nav_shop");
+  renderFooter();
+  document.title = t("all_products") + " — Almo Schmuck";
+  document.querySelectorAll("[data-t]").forEach((el) => { el.textContent = t(el.dataset.t); });
+
+  const categories = ["Alle", ...new Set(PRODUCTS.map((p) => p.category))];
+  const activeCategory = qs("category") || "Alle";
+  const searchTerm = (qs("search") || "").trim().toLowerCase();
+
+  document.getElementById("filters").innerHTML = categories.map((cat) => {
+    const href = cat === "Alle" ? "shop.html" : `shop.html?category=${encodeURIComponent(cat)}`;
+    const cls = cat === activeCategory ? "filter-chip active" : "filter-chip";
+    const label = cat === "Alle" ? t("all_categories") : translateCategory(cat);
+    return `<a class="${cls}" href="${href}">${label}</a>`;
+  }).join("");
+
+  document.getElementById("page-title").textContent = searchTerm
+    ? t("search_results_for", { term: searchTerm })
+    : (activeCategory === "Alle" ? t("all_products") : translateCategory(activeCategory));
+
+  let filtered = activeCategory === "Alle" ? PRODUCTS : PRODUCTS.filter((p) => p.category === activeCategory);
+  if (searchTerm) {
+    filtered = filtered.filter((p) => {
+      const text = getProductText(p);
+      return p.name.toLowerCase().includes(searchTerm) ||
+        text.category.toLowerCase().includes(searchTerm) ||
+        text.description.toLowerCase().includes(searchTerm);
+    });
+  }
+
+  function applySort(list, mode) {
+    const copy = [...list];
+    if (mode === "price-asc") copy.sort((a, b) => a.price - b.price);
+    else if (mode === "price-desc") copy.sort((a, b) => b.price - a.price);
+    else if (mode === "rating") copy.sort((a, b) => b.rating - a.rating);
+    else if (mode === "name") copy.sort((a, b) => a.name.localeCompare(b.name));
+    return copy;
+  }
+
+  function renderGrid() {
+    const mode = document.getElementById("sort-select").value;
+    const sorted = applySort(filtered, mode);
+    document.getElementById("result-count").textContent = t("results_count", { count: sorted.length, plural: sorted.length === 1 ? "" : (getLang() === "de" ? "e" : "s") });
+    document.getElementById("product-grid").innerHTML = sorted.map(renderProductCard).join("") || `<p>${t("no_products")}</p>`;
+    updateWishlistBadge();
+  }
+
+  document.getElementById("sort-select").addEventListener("change", renderGrid);
+  renderGrid();
+</script>
+</body>
+</html>

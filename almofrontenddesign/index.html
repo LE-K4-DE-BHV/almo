@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Almo Schmuck &mdash; Modeschmuck online kaufen</title>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/header.css">
+<link rel="stylesheet" href="css/footer.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/pages.css">
+<link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<section class="hero">
+  <h1 id="hero-title"></h1>
+  <p id="hero-subtitle"></p>
+  <a href="shop.html" class="btn" id="hero-cta"></a>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <h2 id="categories-title"></h2>
+    </div>
+    <div class="categories">
+      <a class="category-tile" style="background-image:url('https://images.pexels.com/photos/1616096/pexels-photo-1616096.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=500')" href="shop.html?category=Ringe"><span data-t="nav_rings"></span></a>
+      <a class="category-tile" style="background-image:url('https://images.pexels.com/photos/7134458/pexels-photo-7134458.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=500')" href="shop.html?category=Halsketten"><span data-t="nav_necklaces"></span></a>
+      <a class="category-tile" style="background-image:url('https://images.pexels.com/photos/5370641/pexels-photo-5370641.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=500')" href="shop.html?category=Ohrringe"><span data-t="nav_earrings"></span></a>
+      <a class="category-tile" style="background-image:url('https://images.pexels.com/photos/12124662/pexels-photo-12124662.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=500')" href="shop.html?category=Armbaender"><span data-t="nav_bracelets"></span></a>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="padding-top:0">
+  <div class="wrap">
+    <div class="section-head">
+      <h2 id="bestsellers-title"></h2>
+      <a href="shop.html" class="link" id="bestsellers-link"></a>
+    </div>
+    <div class="product-grid" id="featured-grid"></div>
+  </div>
+</section>
+
+<section class="section" style="padding-top:0">
+  <div class="wrap">
+    <div class="section-head">
+      <h2 id="new-title"></h2>
+      <a href="shop.html" class="link" id="new-link"></a>
+    </div>
+    <div class="product-grid" id="new-grid"></div>
+  </div>
+</section>
+
+<section class="section" style="padding-top:0" id="recent-section" hidden>
+  <div class="wrap">
+    <div class="section-head">
+      <h2 id="recent-title"></h2>
+    </div>
+    <div class="product-grid" id="recent-grid"></div>
+  </div>
+</section>
+
+<div id="site-footer"></div>
+
+<script src="js/i18n.js"></script>
+<script src="js/products.js"></script>
+<script src="js/products-i18n.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/wishlist.js"></script>
+<script src="js/recently-viewed.js"></script>
+<script src="js/main.js"></script>
+<script>
+  renderHeader("nav_home");
+  renderFooter();
+  document.title = t("site_title_home").replace("&mdash;", "—");
+
+  document.getElementById("hero-title").innerHTML = t("hero_title");
+  document.getElementById("hero-subtitle").innerHTML = t("hero_subtitle");
+  document.getElementById("hero-cta").textContent = t("hero_cta");
+  document.getElementById("categories-title").textContent = t("categories_title");
+  document.getElementById("bestsellers-title").textContent = t("bestsellers_title");
+  document.getElementById("bestsellers-link").textContent = t("view_all");
+  document.getElementById("new-title").textContent = t("new_arrivals_title");
+  document.getElementById("new-link").textContent = t("view_all");
+  document.getElementById("recent-title").textContent = t("recently_viewed_title");
+  document.querySelectorAll("[data-t]").forEach((el) => { el.textContent = t(el.dataset.t); });
+
+  document.getElementById("featured-grid").innerHTML = [...PRODUCTS].sort((a, b) => b.reviewCount - a.reviewCount).slice(0, 4).map(renderProductCard).join("");
+  document.getElementById("new-grid").innerHTML = PRODUCTS.filter((p) => p.badge === "Neu").slice(0, 4).map(renderProductCard).join("");
+
+  const recentIds = getRecentlyViewed();
+  if (recentIds.length) {
+    const recentProducts = recentIds.map(getProductById).filter(Boolean).slice(0, 4);
+    if (recentProducts.length) {
+      document.getElementById("recent-grid").innerHTML = recentProducts.map(renderProductCard).join("");
+      document.getElementById("recent-section").hidden = false;
+    }
+  }
+  updateWishlistBadge();
+</script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+/* Design tokens */
+:root {
+  --color-bg: #faf8f5;
+  --color-surface: #ffffff;
+  --color-text: #1c1a17;
+  --color-text-muted: #6b655c;
+  --color-border: #e8e3da;
+  --color-accent: #b08d3e;
+  --color-accent-dark: #8f7331;
+  --color-sale: #b3492f;
+  --radius: 2px;
+  --max-width: 1240px;
+  --font: "Helvetica Neue", Arial, "Segoe UI", sans-serif;
+}
+
+/* Reset + base elements */
+* { box-sizing: border-box; }
+
+/* Elements toggled via the `hidden` attribute (icon-btn, cart-count, etc. all
+   set `display` themselves, which would otherwise override the browser default). */
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  background: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+img { display: block; max-width: 100%; }
+button { font-family: inherit; cursor: pointer; }
+
+.wrap {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.5;
+}
+
+/* Buttons */
+.btn {
+  display: inline-block;
+  padding: 14px 32px;
+  background: var(--color-text);
+  color: #fff;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid var(--color-text);
+  border-radius: var(--radius);
+  transition: background .15s ease, color .15s ease;
+}
+
+.btn:hover { background: #000; }
+
+.btn-outline {
+  background: transparent;
+  color: var(--color-text);
+}
+
+.btn-outline:hover {
+  background: var(--color-text);
+  color: #fff;
+}
+
+.btn-block { display: block; width: 100%; text-align: center; }
+
+.btn:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+/* Section layout */
+.section {
+  padding: 72px 0;
+}
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.section-head h2 {
+  font-size: 26px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.section-head .link {
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--color-text);
+}

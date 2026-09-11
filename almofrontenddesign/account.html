@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mein Konto &mdash; Almo Schmuck</title>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/header.css">
+<link rel="stylesheet" href="css/footer.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/pages.css">
+<link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <h2 id="account-title"></h2>
+    </div>
+    <div class="account-box" style="margin-bottom:32px">
+      <div class="row"><span id="name-field-label"></span><span data-user-name></span></div>
+      <div class="row"><span id="email-field-label"></span><span data-user-email></span></div>
+      <button class="btn" id="logout-btn" style="margin-top:24px"></button>
+    </div>
+
+    <h3 style="font-size:18px;margin-bottom:16px" id="orders-title"></h3>
+    <div id="orders-root"></div>
+  </div>
+</section>
+
+<div id="site-footer"></div>
+
+<script src="js/i18n.js"></script>
+<script src="js/products.js"></script>
+<script src="js/products-i18n.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/wishlist.js"></script>
+<script src="js/recently-viewed.js"></script>
+<script src="js/orders.js"></script>
+<script src="js/main.js"></script>
+<script>
+  renderHeader();
+  renderFooter();
+  requireLogin("account.html");
+
+  document.title = t("account_title") + " — Almo Schmuck";
+  document.getElementById("account-title").textContent = t("account_title");
+  document.getElementById("name-field-label").textContent = t("name_field");
+  document.getElementById("email-field-label").textContent = t("email_field");
+  document.getElementById("logout-btn").textContent = t("logout_btn");
+  document.getElementById("orders-title").textContent = t("orders_title");
+  document.getElementById("logout-btn").addEventListener("click", logout);
+
+  function paymentLabel(value) {
+    if (value === "Kreditkarte") return t("payment_cc");
+    if (value === "PayPal") return t("payment_paypal");
+    if (value === "Rechnung") return t("payment_invoice");
+    return value;
+  }
+
+  const user = getCurrentUser();
+  const ordersRoot = document.getElementById("orders-root");
+  if (user) {
+    const orders = getOrdersForUser(user.email);
+    if (orders.length === 0) {
+      ordersRoot.innerHTML = `<p style="color:var(--color-text-muted)">${t("no_orders")}</p>`;
+    } else {
+      const locale = { de: "de-DE", en: "en-GB", fr: "fr-FR" }[getLang()] || "de-DE";
+      ordersRoot.innerHTML = orders.map((order) => {
+        const dateStr = new Date(order.date).toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric" });
+        const itemNames = order.items.map((item) => {
+          const p = getProductById(item.id);
+          return p ? `${p.name} &times;${item.qty}` : "";
+        }).filter(Boolean).join(", ");
+        return `
+          <div class="account-box" style="max-width:100%;margin-bottom:16px">
+            <div class="row"><span>${t("order_number")}</span><span>${order.orderNumber}</span></div>
+            <div class="row"><span>${t("order_date")}</span><span>${dateStr}</span></div>
+            <div class="row"><span>${t("order_items")}</span><span style="text-align:right;max-width:60%">${itemNames}</span></div>
+            <div class="row"><span>${t("order_payment")}</span><span>${paymentLabel(order.payment)}</span></div>
+            <div class="row"><span>${t("order_total")}</span><span>${formatPrice(order.total)}</span></div>
+          </div>
+        `;
+      }).join("");
+    }
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Warenkorb &mdash; Almo Schmuck</title>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/header.css">
+<link rel="stylesheet" href="css/footer.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/pages.css">
+<link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <h2 id="cart-title"></h2>
+    </div>
+    <div id="cart-root"></div>
+  </div>
+</section>
+
+<section class="section" style="padding-top:0" id="cross-sell-section" hidden>
+  <div class="wrap">
+    <div class="section-head">
+      <h2 id="cross-sell-title"></h2>
+    </div>
+    <div class="product-grid" id="cross-sell-grid"></div>
+  </div>
+</section>
+
+<div id="site-footer"></div>
+
+<script src="js/i18n.js"></script>
+<script src="js/products.js"></script>
+<script src="js/products-i18n.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/wishlist.js"></script>
+<script src="js/recently-viewed.js"></script>
+<script src="js/main.js"></script>
+<script>
+  renderHeader();
+  renderFooter();
+  document.title = t("cart_title") + " — Almo Schmuck";
+  document.getElementById("cart-title").textContent = t("cart_title");
+  document.getElementById("cross-sell-title").textContent = t("cross_sell_title");
+
+  let appliedPromo = null;
+
+  function renderCart() {
+    const root = document.getElementById("cart-root");
+    const cart = getCart();
+    const crossSellSection = document.getElementById("cross-sell-section");
+
+    if (cart.length === 0) {
+      root.innerHTML = `
+        <div class="empty-state">
+          <h2>${t("cart_empty_title")}</h2>
+          <p>${t("cart_empty_text")}</p>
+          <a href="shop.html" class="btn">${t("shop_now")}</a>
+        </div>`;
+      crossSellSection.hidden = true;
+      return;
+    }
+
+    const cartIds = cart.map((item) => item.id);
+    const crossSell = PRODUCTS.filter((p) => !cartIds.includes(p.id)).slice(0, 4);
+    document.getElementById("cross-sell-grid").innerHTML = crossSell.map(renderProductCard).join("");
+    crossSellSection.hidden = false;
+
+    const lines = cart.map((item) => {
+      const product = getProductById(item.id);
+      if (!product) return "";
+      return `
+        <div class="cart-line" data-line="${product.id}">
+          <div class="cart-thumb">
+            <img src="${product.images[0]}" alt="${product.name}" style="width:100%;height:100%;object-fit:cover">
+          </div>
+          <div class="cart-line-info">
+            <a href="product.html?id=${product.id}" class="name">${product.name}</a>
+            <div class="unit-price">${formatPrice(product.price)} ${t("per_piece")}</div>
+            <div class="qty-stepper" style="margin-top:10px;width:fit-content">
+              <button type="button" class="line-minus" data-id="${product.id}">&minus;</button>
+              <input type="number" class="line-qty" data-id="${product.id}" value="${item.qty}" min="1" readonly>
+              <button type="button" class="line-plus" data-id="${product.id}">&plus;</button>
+            </div>
+          </div>
+          <div class="cart-line-actions">
+            <div class="line-total">${formatPrice(product.price * item.qty)}</div>
+            <a href="#" class="remove-link" data-id="${product.id}">${t("remove")}</a>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    const subtotal = getCartTotal();
+    const discount = appliedPromo ? subtotal * 0.1 : 0;
+    const shipping = (subtotal - discount) >= 30 ? 0 : 3.9;
+    const total = subtotal - discount + shipping;
+
+    root.innerHTML = `
+      <div class="cart-layout">
+        <div class="cart-lines">${lines}</div>
+        <div class="cart-summary">
+          <h2>${t("summary_title")}</h2>
+          <div class="summary-row"><span>${t("subtotal")}</span><span>${formatPrice(subtotal)}</span></div>
+          ${discount > 0 ? `<div class="summary-row"><span>${t("discount_label")}</span><span>&minus;${formatPrice(discount)}</span></div>` : ""}
+          <div class="summary-row"><span>${t("shipping")}</span><span>${shipping === 0 ? t("free") : formatPrice(shipping)}</span></div>
+          <div class="summary-row total"><span>${t("total")}</span><span>${formatPrice(total)}</span></div>
+          <form id="promo-form" style="display:flex;gap:8px;margin-top:16px">
+            <input type="text" id="promo-input" placeholder="${t("promo_placeholder")}" style="flex:1;padding:10px 12px;border:1px solid var(--color-border);border-radius:var(--radius);font-size:13px" value="${appliedPromo || ""}">
+            <button type="submit" class="btn btn-outline" style="padding:10px 16px">${t("promo_apply")}</button>
+          </form>
+          <div class="form-msg" id="promo-msg"></div>
+          <button class="btn btn-block" id="checkout-btn" style="margin-top:20px">${t("checkout_btn")}</button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById("promo-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const code = document.getElementById("promo-input").value.trim().toUpperCase();
+      const msg = document.getElementById("promo-msg");
+      if (code === "WILLKOMMEN10") {
+        appliedPromo = code;
+        msg.textContent = t("promo_success");
+        renderCart();
+      } else {
+        appliedPromo = null;
+        msg.textContent = t("promo_invalid");
+      }
+    });
+
+    root.querySelectorAll(".line-minus").forEach((btn) => btn.addEventListener("click", () => {
+      const id = btn.dataset.id;
+      const item = getCart().find((i) => i.id === id);
+      updateCartQty(id, item.qty - 1);
+      renderCart();
+    }));
+    root.querySelectorAll(".line-plus").forEach((btn) => btn.addEventListener("click", () => {
+      const id = btn.dataset.id;
+      const item = getCart().find((i) => i.id === id);
+      updateCartQty(id, item.qty + 1);
+      renderCart();
+    }));
+    root.querySelectorAll(".remove-link").forEach((btn) => btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      removeFromCart(btn.dataset.id);
+      renderCart();
+    }));
+    document.getElementById("checkout-btn").addEventListener("click", () => {
+      if (!isLoggedIn()) {
+        window.location.href = "login.html?redirect=checkout.html";
+      } else {
+        window.location.href = "checkout.html";
+      }
+    });
+
+    updateWishlistBadge();
+  }
+
+  renderCart();
+</script>
+</body>
+</html>
