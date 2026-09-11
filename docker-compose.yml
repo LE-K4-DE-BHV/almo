@@ -1,3 +1,5 @@
+# Local/VPS runtime stack. Copy infra/.env.example to .env next to this file
+# and adjust before running `docker compose up`.
 services:
   db:
     image: postgres:17-alpine
@@ -8,12 +10,16 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-almo}
     volumes:
       - almo_pgdata:/var/lib/postgresql/data
+    # No "ports:" on purpose: only other containers on almo_internal can reach
+    # Postgres, not the host or the outside world (matches how nspace-postgres
+    # is set up on the shared VPS, see spec).
     networks:
       - almo_internal
 
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    # Same reasoning as db: internal-only, backend reaches it by service name.
     networks:
       - almo_internal
 
@@ -34,6 +40,9 @@ services:
       SERVER_PORT: 8094
       BREVO_API_KEY: ${BREVO_API_KEY:-}
       CLOUDINARY_URL: ${CLOUDINARY_URL:-}
+    # Bound to 127.0.0.1 only: reachable from this machine and from nginx
+    # (which also runs on the host), never directly from the internet - nginx
+    # is the only public entry point, see infra/nginx.
     ports:
       - "127.0.0.1:${BACKEND_PORT:-8094}:8094"
     networks:

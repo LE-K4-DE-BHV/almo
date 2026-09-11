@@ -1,3 +1,7 @@
+// Vite scaffold placeholder, not final UI. Gets replaced in Sprint 2 (see
+// docs/backlog.md) when the almofrontenddesign/ header/footer/home page are
+// ported over. Kept as-is for now purely to prove the build/lint/docker
+// pipeline works end to end before real components exist.
 import { useState } from 'react'
 import heroImg from './assets/hero.png'
 import reactLogo from './assets/react.svg'

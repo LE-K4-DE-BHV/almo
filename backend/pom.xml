@@ -27,9 +27,11 @@
 		<url/>
 	</scm>
 	<properties>
-		<java.version>21</java.version>
+		<java.version>25</java.version>
 	</properties>
 	<dependencies>
+		<!-- Health/readiness endpoints; also what docker-compose and the deploy
+		     script poll to know the container is actually up, not just started. -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
@@ -38,6 +40,7 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
+		<!-- Backs Spring Session below, not used directly as an app-level cache yet. -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-redis</artifactId>
@@ -50,6 +53,8 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
+		<!-- Stores the login session in Redis instead of backend memory, so users
+		     stay logged in across a container restart/redeploy (see spec). -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-session-data-redis</artifactId>
@@ -72,6 +77,8 @@
 			<artifactId>postgresql</artifactId>
 			<scope>runtime</scope>
 		</dependency>
+		<!-- optional=true keeps Lombok out of the transitive dependency tree of
+		     anything that depends on this module later (it's a compile-time-only tool). -->
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
@@ -125,10 +132,18 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+			<!-- Enforces consistent formatting in CI (see .github/workflows/ci.yml).
+			     Run `./mvnw spotless:apply` locally before committing to auto-fix;
+			     `verify` phase means `mvn install`/CI fails on unformatted code, but
+			     plain `mvn compile` still works for fast local iteration. -->
 			<plugin>
 				<groupId>com.diffplug.spotless</groupId>
 				<artifactId>spotless-maven-plugin</artifactId>
-				<version>2.44.3</version>
+				<!-- 2.44.x's bundled google-java-format breaks on JDK 25 (javac
+				     internals changed a method's return type: NoSuchMethodError on
+				     DeferredDiagnosticHandler.getDiagnostics). 3.10+ picks
+				     google-java-format 1.30.0 automatically on JVM 25+, which fixes it. -->
+				<version>3.10.2</version>
 				<configuration>
 					<java>
 						<googleJavaFormat/>

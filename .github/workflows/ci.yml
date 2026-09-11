@@ -1,5 +1,9 @@
 name: CI
 
+# Runs on every push to main and on every PR, so a broken build/format/lint is
+# caught before it lands. Only the lint/build stage exists so far (Sprint 0);
+# test/e2e/security-scan/deploy stages get added in later sprints per the spec's
+# CI/CD section and docs/backlog.md.
 on:
   push:
     branches: [main]
@@ -20,6 +24,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run lint
+      # tsc -b (type-check) + vite build catches type errors lint doesn't.
       - run: npm run build
 
   lint-backend:
@@ -32,7 +37,9 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "21"
+          java-version: "25"
           cache: maven
+      # Fails the build on formatting drift instead of auto-fixing in CI -
+      # contributors run `./mvnw spotless:apply` locally before pushing.
       - run: ./mvnw -B spotless:check
       - run: ./mvnw -B compile

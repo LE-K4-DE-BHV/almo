@@ -1,4 +1,6 @@
--- Baseline-Schema nach docs/superpowers/specs/2026-09-11-almo-shop-design.md
+-- Baseline schema, derived from docs/superpowers/specs/2026-09-11-almo-shop-design.md.
+-- Keep this file and the spec in sync: if the data model changes, add a new
+-- Vn__*.sql migration (never edit this one once it has shipped to any environment).
 
 CREATE TABLE users (
     id            BIGSERIAL PRIMARY KEY,
@@ -38,6 +40,10 @@ CREATE TABLE products (
     stock_quantity    INTEGER       NOT NULL DEFAULT 0,
     metal_color       VARCHAR(50),
     badge             VARCHAR(50),
+    -- Derived from stock_quantity per spec, not settable directly: a GENERATED
+    -- STORED column means status can never drift out of sync with stock (no
+    -- app-code path can update one without the other), and it's still indexable/
+    -- filterable like a normal column.
     status            VARCHAR(20) GENERATED ALWAYS AS (
                           CASE
                               WHEN stock_quantity = 0 THEN 'out_of_stock'
@@ -92,6 +98,10 @@ CREATE TABLE wishlist_items (
     PRIMARY KEY (user_id, product_id)
 );
 
+-- A cart row belongs to either a guest session or a logged-in user, never both:
+-- session_id is set for guests, user_id replaces it once they log in (cart merge
+-- happens in application code, see backlog Sprint 3). The CHECK just guards
+-- against a row with neither ever being written.
 CREATE TABLE cart_items (
     id         BIGSERIAL PRIMARY KEY,
     session_id VARCHAR(255),
@@ -107,6 +117,9 @@ CREATE TABLE newsletter_subscribers (
     subscribed_at  TIMESTAMPTZ  NOT NULL DEFAULT now()
 );
 
+-- Foreign-key columns get an explicit index: Postgres does NOT index them
+-- automatically (only the referenced side, via the PK, is indexed by default),
+-- and every one of these is joined/filtered on in the product/order/cart flows.
 CREATE INDEX idx_products_category_id ON products (category_id);
 CREATE INDEX idx_product_translations_product_id ON product_translations (product_id);
 CREATE INDEX idx_reviews_product_id ON reviews (product_id);

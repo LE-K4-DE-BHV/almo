@@ -21,6 +21,8 @@ Die drei offenen Punkte brauchen root/SSH-Zugriff auf den VPS und werden separat
 
 Abweichung von der ursprünglichen Sprint-0-Planung: Frontend-Lint läuft über `oxlint` statt `ESLint` (moderner Vite-Default, spart Konfigaufwand) - CI-Workflow spiegelt das wider. Falls explizit ESLint gewünscht ist, kurz Bescheid geben.
 
+Zusätzlich erledigt: Java auf dem Backend von 21 auf 25 (LTS) gewechselt (siehe Chat-Recherche zu Support-Zeiträumen). Dabei aufgefallen: `spotless-maven-plugin` 2.44.3 crasht auf JDK 25 (bekannter Bug, `NoSuchMethodError` in Googles Java-Format wegen geänderter javac-internals) - auf 3.10.2 gehoben, das wählt automatisch eine JDK-25-kompatible google-java-format-Version. Developer-Guide (`docs/developer-guide.md`) angelegt und alle Sprint-0-Dateien rückwirkend kommentiert (Backend: Javadoc + Inline-Kommentare, Frontend: TS/CSS, Docker/Compose/CI/nginx).
+
 ## Sprint 1 - Auth & Datenmodell
 
 Ziel: Login/Register/Logout funktioniert gegen echtes Backend, komplettes DB-Schema steht.
