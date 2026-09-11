@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -77,6 +78,15 @@ public class AuthController {
       return ResponseEntity.status(401).build();
     }
     return ResponseEntity.ok(UserResponse.from(authService.findByEmail(authentication.getName())));
+  }
+
+  @DeleteMapping("/me")
+  public ResponseEntity<Void> deleteAccount(
+      HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
+    authService.deleteAccount(authentication.getName());
+    // The account is gone - whatever session referenced it must go too.
+    new SecurityContextLogoutHandler().logout(request, response, authentication);
+    return ResponseEntity.noContent().build();
   }
 
   @PostMapping("/logout")

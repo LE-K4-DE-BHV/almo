@@ -1,9 +1,13 @@
 package de.almo.backend.common;
 
+import de.almo.backend.auth.AccountHasOrdersException;
 import de.almo.backend.auth.EmailAlreadyRegisteredException;
 import de.almo.backend.auth.InvalidResetTokenException;
 import de.almo.backend.cart.CartItemNotFoundException;
 import de.almo.backend.catalog.ProductNotFoundException;
+import de.almo.backend.order.EmptyCartException;
+import de.almo.backend.order.InsufficientStockException;
+import de.almo.backend.order.OrderNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -37,6 +41,26 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(CartItemNotFoundException.class)
   public ResponseEntity<ApiError> handleCartItemNotFound(CartItemNotFoundException e) {
     return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiError(e.getMessage()));
+  }
+
+  @ExceptionHandler(OrderNotFoundException.class)
+  public ResponseEntity<ApiError> handleOrderNotFound(OrderNotFoundException e) {
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiError(e.getMessage()));
+  }
+
+  @ExceptionHandler(EmptyCartException.class)
+  public ResponseEntity<ApiError> handleEmptyCart(EmptyCartException e) {
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiError(e.getMessage()));
+  }
+
+  @ExceptionHandler(InsufficientStockException.class)
+  public ResponseEntity<ApiError> handleInsufficientStock(InsufficientStockException e) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiError(e.getMessage()));
+  }
+
+  @ExceptionHandler(AccountHasOrdersException.class)
+  public ResponseEntity<ApiError> handleAccountHasOrders(AccountHasOrdersException e) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiError(e.getMessage()));
   }
 
   @ExceptionHandler(BadCredentialsException.class)

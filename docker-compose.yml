@@ -45,6 +45,8 @@ services:
       BREVO_API_KEY: ${BREVO_API_KEY:-}
       BREVO_SENDER_EMAIL: ${BREVO_SENDER_EMAIL:-no-reply@almo-group.vn-nspace.de}
       BREVO_SENDER_NAME: ${BREVO_SENDER_NAME:-Almo Schmuck}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-orders@almo-group.vn-nspace.de}
+      ADMIN_WHATSAPP: ${ADMIN_WHATSAPP:-+49 000 0000000}
       CLOUDINARY_URL: ${CLOUDINARY_URL:-}
     # Bound to 127.0.0.1 only: reachable from this machine and from nginx
     # (which also runs on the host), never directly from the internet - nginx

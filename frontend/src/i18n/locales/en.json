@@ -63,7 +63,6 @@
   "cart_quantity": "Quantity",
   "cart_remove": "Remove",
   "cart_checkout": "Checkout",
-  "cart_checkout_soon": "Checkout is coming in Sprint 4",
   "cart_continue_shopping": "Continue shopping",
 
   "wishlist_title": "Wishlist",
@@ -72,7 +71,40 @@
   "product_details_title": "Details",
   "product_reviews_title": "Reviews",
   "product_reviews_empty": "No reviews yet.",
-  "product_reviews_write_soon": "Writing reviews is coming in Sprint 4, once orders exist.",
+  "product_reviews_write_soon": "Writing reviews isn't available yet.",
   "product_recently_viewed_title": "Recently viewed",
-  "reviews_count": "{{count}} review(s)"
+  "reviews_count": "{{count}} review(s)",
+
+  "checkout_title": "Checkout",
+  "checkout_name": "Name",
+  "checkout_address": "Address",
+  "checkout_city": "City",
+  "checkout_contact_preference": "How should we contact you?",
+  "checkout_contact_whatsapp": "WhatsApp",
+  "checkout_contact_email": "Email",
+  "checkout_submit": "Place order",
+  "checkout_summary_title": "Order summary",
+  "checkout_shipping": "Shipping",
+  "checkout_total": "Total",
+  "checkout_free_shipping_hint": "Free shipping over €30",
+
+  "order_success_title": "Order received",
+  "order_success_text": "Thanks, {{name}}! Your order {{orderNumber}} has been received. We'll reach out soon.",
+  "order_view_pdf": "Download order PDF",
+  "order_back_to_shop": "Continue shopping",
+
+  "account_orders_title": "Order history",
+  "account_no_orders": "No orders yet.",
+  "account_order_number": "Order",
+  "account_order_date": "Date",
+  "account_order_total": "Total",
+  "account_order_pdf": "PDF",
+  "order_status_OPEN": "Open",
+  "order_status_CONTACTED": "Contacted",
+  "order_status_DONE": "Done",
+
+  "account_delete_title": "Delete account",
+  "account_delete_button": "Delete account permanently",
+  "account_delete_confirm": "Are you sure? This can't be undone.",
+  "account_delete_blocked": "Account can't be deleted: you already have orders. Contact the shop owner."
 }

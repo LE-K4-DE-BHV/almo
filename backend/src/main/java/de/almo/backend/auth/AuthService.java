@@ -12,6 +12,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -102,6 +103,18 @@ public class AuthService {
     context.setAuthentication(authentication);
     SecurityContextHolder.setContext(context);
     securityContextRepository.saveContext(context, request, response);
+  }
+
+  @Transactional
+  public void deleteAccount(String email) {
+    User user = findByEmail(email);
+    try {
+      userRepository.delete(user);
+      userRepository
+          .flush(); // force the FK check now, inside this try, not after the method returns
+    } catch (DataIntegrityViolationException e) {
+      throw new AccountHasOrdersException();
+    }
   }
 
   public User findByEmail(String email) {

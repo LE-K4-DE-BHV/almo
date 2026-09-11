@@ -63,7 +63,6 @@
   "cart_quantity": "Quantité",
   "cart_remove": "Retirer",
   "cart_checkout": "Commander",
-  "cart_checkout_soon": "Le paiement arrive au Sprint 4",
   "cart_continue_shopping": "Continuer mes achats",
 
   "wishlist_title": "Favoris",
@@ -72,7 +71,40 @@
   "product_details_title": "Détails",
   "product_reviews_title": "Avis",
   "product_reviews_empty": "Aucun avis pour le moment.",
-  "product_reviews_write_soon": "La rédaction d'avis arrive au Sprint 4, une fois les commandes en place.",
+  "product_reviews_write_soon": "La rédaction d'avis n'est pas encore disponible.",
   "product_recently_viewed_title": "Vus récemment",
-  "reviews_count": "{{count}} avis"
+  "reviews_count": "{{count}} avis",
+
+  "checkout_title": "Commande",
+  "checkout_name": "Nom",
+  "checkout_address": "Adresse",
+  "checkout_city": "Ville",
+  "checkout_contact_preference": "Comment souhaitez-vous être contacté(e) ?",
+  "checkout_contact_whatsapp": "WhatsApp",
+  "checkout_contact_email": "E-mail",
+  "checkout_submit": "Valider la commande",
+  "checkout_summary_title": "Récapitulatif",
+  "checkout_shipping": "Livraison",
+  "checkout_total": "Total",
+  "checkout_free_shipping_hint": "Livraison gratuite dès 30 €",
+
+  "order_success_title": "Commande reçue",
+  "order_success_text": "Merci, {{name}} ! Votre commande {{orderNumber}} a bien été reçue. Nous vous recontactons bientôt.",
+  "order_view_pdf": "Télécharger le PDF de commande",
+  "order_back_to_shop": "Continuer mes achats",
+
+  "account_orders_title": "Historique des commandes",
+  "account_no_orders": "Aucune commande pour le moment.",
+  "account_order_number": "Commande",
+  "account_order_date": "Date",
+  "account_order_total": "Total",
+  "account_order_pdf": "PDF",
+  "order_status_OPEN": "Ouverte",
+  "order_status_CONTACTED": "Contact pris",
+  "order_status_DONE": "Terminée",
+
+  "account_delete_title": "Supprimer le compte",
+  "account_delete_button": "Supprimer définitivement le compte",
+  "account_delete_confirm": "Êtes-vous sûr(e) ? Cette action est irréversible.",
+  "account_delete_blocked": "Compte impossible à supprimer : des commandes existent déjà. Contactez le responsable de la boutique."
 }

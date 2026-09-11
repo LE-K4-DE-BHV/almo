@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { useCart } from '../cart/useCart'
+import { useAuth } from '../auth/useAuth'
 
 function formatPrice(value: number, lang: string) {
   return new Intl.NumberFormat(lang, { style: 'currency', currency: 'EUR' }).format(value)
@@ -9,6 +10,15 @@ function formatPrice(value: number, lang: string) {
 export function CartPage() {
   const { t, i18n } = useTranslation()
   const { cart, updateItem, removeItem } = useCart()
+  const { user } = useAuth()
+  const navigate = useNavigate()
+
+  function handleCheckout() {
+    // Checkout itself requires login (see backend CheckoutController - falls under the default
+    // "anyRequest().authenticated()" rule) - send an anonymous cart owner to log in first rather
+    // than letting them hit checkout and bounce off a 401.
+    navigate(user ? '/checkout' : '/login')
+  }
 
   if (cart.items.length === 0) {
     return (
@@ -77,13 +87,10 @@ export function CartPage() {
           <span>{t('cart_subtotal')}</span>
           <span>{formatPrice(cart.subtotal, i18n.language)}</span>
         </div>
-        {/* Checkout is Sprint 4 (see docs/backlog.md) - disabled placeholder rather than a route
-            that doesn't exist yet. */}
         <button
           type="button"
-          disabled
-          title={t('cart_checkout_soon')}
-          className="rounded bg-brand-text px-8 py-3 text-xs uppercase tracking-wide text-white disabled:cursor-not-allowed disabled:opacity-50"
+          onClick={handleCheckout}
+          className="rounded bg-brand-text px-8 py-3 text-xs uppercase tracking-wide text-white hover:bg-black"
         >
           {t('cart_checkout')}
         </button>

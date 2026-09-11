@@ -34,6 +34,10 @@ export function logout() {
   return apiFetch<void>('/api/auth/logout', { method: 'POST' })
 }
 
+export function deleteAccount() {
+  return apiFetch<void>('/api/auth/me', { method: 'DELETE' })
+}
+
 export function me() {
   return apiFetch<UserResponse>('/api/auth/me')
 }

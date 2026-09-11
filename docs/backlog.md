@@ -106,12 +106,34 @@ Durchgetestet: kompletter curl-Flow (Gast fügt 2 Produkte hinzu → registriert
 
 Ziel: Eine Bestellung lässt sich komplett end-to-end durchklicken.
 
-- [ ] Checkout-Frontend: Kontakt-/Adressdaten, **Kontaktweg-Wahl (WhatsApp/E-Mail) statt Zahlungsart**, Bestellübersicht inkl. Versandkosten
-- [ ] Backend: Order-Anlage, `stock_quantity`-Abzug, Versandkosten-Berechnung (3,90 € / kostenlos ab 30 €) serverseitig
-- [ ] Brevo-Anbindung: Bestellmail an Admin-Adresse
-- [ ] PDF-Generierung für den Kunden (Produkte, Preise, WhatsApp + E-Mail vom Admin)
-- [ ] Konto-Seite: Bestellhistorie mit Status, alte PDFs erneut herunterladen
-- [ ] Account-Selbstlöschung im Konto-Bereich
+### Technische Entscheidungen (festgelegt vor der Implementierung)
+
+- **PDF-Bibliothek: OpenPDF 3.0.5** (`org.openpdf.text.*`, LGPL/MPL) statt Apache PDFBox - High-Level-API (Document/Paragraph/PdfPTable) spart deutlich Code gegenüber PDFBox' manueller Text-Positionierung für eine simple Tabellen-PDF.
+- **PDF wird live neu generiert**, nicht gespeichert - `orders`/`order_items` speichern alles Nötige (inkl. Produktname als Snapshot, da Produkte später editierbar/löschbar werden, Sprint 5). Kein Dateispeicher-Konzept nötig, keine Cloudinary-artige Entscheidung aus Sprint 5 vorgezogen.
+- **Admin-Benachrichtigungsadresse per Env-Variable** (`ADMIN_EMAIL`/`app.shop.contact-email`), Platzhalter-Default - echte Adresse wird eingetragen, sobald sie feststeht.
+- **Order-Anlage nutzt echte JPA-Entities** (`Order`, `OrderItem`), nicht JdbcClient wie der Katalog - Checkout ist ein klassischer transaktionaler Write-Flow (Order + Items + Lagerabzug in einer Transaktion), dafür ist JPA die bessere Wahl als für die dynamischen Katalog-Filter.
+- **Lagerabzug atomar mit Bedingung**: `UPDATE products SET stock_quantity = stock_quantity - :qty WHERE id = :id AND stock_quantity >= :qty`, betroffene Zeilen geprüft - verhindert Overselling bei gleichzeitigen Bestellungen, kein Pessimistic Locking nötig.
+- **Account-Selbstlöschung**: `orders.user_id` hat bewusst kein `ON DELETE CASCADE` (Bestellhistorie muss für den Admin erhalten bleiben). Löschversuch mit vorhandenen Bestellungen schlägt mit klarer Fehlermeldung fehl ("Bestellungen vorhanden, wende dich an den Admin") statt die Historie stillschweigend zu anonymisieren oder zu löschen.
+
+### Aufgaben
+
+- [x] Migration: `orders` um `shipping_name`/`shipping_address`/`shipping_city` erweitert, `order_items` um `product_name` (Snapshot)
+- [x] `POST /api/checkout`: Order aus dem aktuellen Warenkorb anlegen, Preise/Produktnamen snapshotten, Versandkosten serverseitig berechnen, Lagerabzug (atomar, race-sicher), Warenkorb leeren
+- [x] `GET /api/orders`, `GET /api/orders/{id}` (nur eigene Bestellungen, sonst 404)
+- [x] `GET /api/orders/{id}/pdf` (live generiert mit OpenPDF)
+- [x] Brevo-Mail an Admin-Adresse bei neuer Bestellung
+- [x] `DELETE /api/auth/me` (Selbstlöschung, mit FK-Schutz für vorhandene Bestellungen, 409 statt stillem Datenverlust)
+- [x] Frontend: Checkout-Seite (Adresse, Kontaktweg-Wahl, Bestellübersicht), Bestätigungsseite mit PDF-Download
+- [x] Frontend: Cart-Checkout-Button und Produktseite-"Jetzt kaufen" aktiviert (bisher deaktivierte Platzhalter aus Sprint 3)
+- [x] Frontend: Konto-Seite mit Bestellhistorie + PDF-Re-Download, Account-Löschung mit Bestätigung (dabei gleich mit Tailwind gestylt, war seit Sprint 1 noch unstyled)
+
+Durchgetestet: kompletter curl-Flow (Checkout mit Versandkosten <30€, Checkout mit Gratis-Versand ≥30€, Lagerabzug verifiziert, Ownership-Isolation bei fremden Bestellungen → 404, Insufficient-Stock-Rejection mit korrektem Rollback von Cart/Lager, Account-Löschung mit/ohne Bestellungen), danach der komplette Flow im echten Browser (Produkt in den Warenkorb → Checkout ausfüllen → Bestellung abschicken → Bestätigungsseite → PDF-Download → Bestellhistorie im Konto).
+
+**Zwei echte Frontend-Bugs gefunden und gefixt, nur im Browser sichtbar (nicht beim Bauen/Linten):**
+- `CheckoutPage` prüfte beim Rendern nicht auf den `loading`-Zustand von Auth/Cart - bei einer harten Navigation direkt auf `/checkout` (z.B. Reload) waren `user`/`cart` noch auf ihren leeren Ausgangswerten, wodurch die Seite einen eingeloggten User mit vollem Warenkorb sofort wieder zu `/login` rausgeworfen hat. Gefixt mit denselben `loading`-Guards wie `RequireAuth`.
+- Nach erfolgreichem Checkout landete die Seite auf dem leeren Warenkorb statt der Bestätigungsseite: `refreshCart()` leert den Warenkorb-State, was `CheckoutPage` neu rendert und den `cart.items.length === 0`-Guard auslöst (`<Navigate to="/cart">`) - das gewann das Rennen gegen den eigentlichen `navigate('/order-confirmation/...')`-Aufruf direkt danach. Gefixt mit einem `orderPlaced`-Flag, das den Guard nach erfolgreichem Checkout deaktiviert.
+
+**Offener Punkt, nicht Teil des Sprint-4-Umfangs:** Bewertungen schreiben ist weiterhin nicht gebaut (siehe Sprint-3-Entscheidung) - Bestellungen existieren jetzt zwar, aber der Schreib-Endpunkt/das Formular ist ein eigenes, noch nicht eingeplantes Stück Arbeit, kein automatischer Sprint-4-Nebeneffekt.
 
 ## Sprint 5 - Admin-Bereich
 

@@ -63,7 +63,6 @@
   "cart_quantity": "Menge",
   "cart_remove": "Entfernen",
   "cart_checkout": "Zur Kasse",
-  "cart_checkout_soon": "Checkout kommt in Sprint 4",
   "cart_continue_shopping": "Weiter einkaufen",
 
   "wishlist_title": "Wunschliste",
@@ -72,7 +71,40 @@
   "product_details_title": "Details",
   "product_reviews_title": "Bewertungen",
   "product_reviews_empty": "Noch keine Bewertungen.",
-  "product_reviews_write_soon": "Bewertungen abgeben kommt in Sprint 4, sobald Bestellungen existieren.",
+  "product_reviews_write_soon": "Bewertungen abgeben ist noch nicht verfuegbar.",
   "product_recently_viewed_title": "Zuletzt angesehen",
-  "reviews_count": "{{count}} Bewertung(en)"
+  "reviews_count": "{{count}} Bewertung(en)",
+
+  "checkout_title": "Kasse",
+  "checkout_name": "Name",
+  "checkout_address": "Adresse",
+  "checkout_city": "Stadt",
+  "checkout_contact_preference": "Wie sollen wir dich kontaktieren?",
+  "checkout_contact_whatsapp": "WhatsApp",
+  "checkout_contact_email": "E-Mail",
+  "checkout_submit": "Bestellung abschicken",
+  "checkout_summary_title": "Bestellübersicht",
+  "checkout_shipping": "Versand",
+  "checkout_total": "Gesamt",
+  "checkout_free_shipping_hint": "Kostenloser Versand ab 30 €",
+
+  "order_success_title": "Bestellung eingegangen",
+  "order_success_text": "Danke, {{name}}! Deine Bestellung {{orderNumber}} ist bei uns eingegangen. Wir melden uns bald bei dir.",
+  "order_view_pdf": "Bestell-PDF herunterladen",
+  "order_back_to_shop": "Weiter einkaufen",
+
+  "account_orders_title": "Bestellhistorie",
+  "account_no_orders": "Noch keine Bestellungen.",
+  "account_order_number": "Bestellung",
+  "account_order_date": "Datum",
+  "account_order_total": "Gesamt",
+  "account_order_pdf": "PDF",
+  "order_status_OPEN": "Offen",
+  "order_status_CONTACTED": "Kontaktiert",
+  "order_status_DONE": "Abgeschlossen",
+
+  "account_delete_title": "Account löschen",
+  "account_delete_button": "Account unwiderruflich löschen",
+  "account_delete_confirm": "Bist du sicher? Das kann nicht rückgängig gemacht werden.",
+  "account_delete_blocked": "Account kann nicht gelöscht werden: du hast bereits Bestellungen. Wende dich an den Shop-Betreiber."
 }

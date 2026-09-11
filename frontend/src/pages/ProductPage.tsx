@@ -63,6 +63,20 @@ export function ProductPage() {
     }
   }
 
+  async function handleBuyNow() {
+    if (!user) {
+      navigate('/login')
+      return
+    }
+    setAdding(true)
+    try {
+      await addItem(productId, 1)
+      navigate('/checkout')
+    } finally {
+      setAdding(false)
+    }
+  }
+
   function handleToggleWishlist() {
     if (!user) {
       navigate('/login')
@@ -151,12 +165,11 @@ export function ProductPage() {
             >
               {t('add_to_cart')}
             </button>
-            {/* "Jetzt kaufen" per spec goes straight to checkout - Sprint 4, so disabled for now. */}
             <button
               type="button"
-              disabled
-              title={t('cart_checkout_soon')}
-              className="flex-1 rounded border border-brand-text px-6 py-3 text-xs uppercase tracking-wide disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={handleBuyNow}
+              disabled={adding || product.status === 'out_of_stock'}
+              className="flex-1 rounded border border-brand-text px-6 py-3 text-xs uppercase tracking-wide hover:bg-brand-text hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
               {t('buy_now')}
             </button>
@@ -193,7 +206,8 @@ export function ProductPage() {
           </ul>
         )}
         {/* No review form yet - see Sprint 3 decision in docs/backlog.md: writing is gated on
-            having bought the product, which needs Sprint 4's orders to check against. */}
+            having bought the product. Orders exist as of Sprint 4, but the write endpoint/form
+            itself is still a separate, not-yet-scheduled piece of work. */}
         <p className="mt-4 text-xs text-brand-text-muted">{t('product_reviews_write_soon')}</p>
       </section>
 

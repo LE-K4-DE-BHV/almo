@@ -4,6 +4,8 @@ import { HomePage } from './pages/HomePage'
 import { ShopPage } from './pages/ShopPage'
 import { ProductPage } from './pages/ProductPage'
 import { CartPage } from './pages/CartPage'
+import { CheckoutPage } from './pages/CheckoutPage'
+import { OrderConfirmationPage } from './pages/OrderConfirmationPage'
 import { WishlistPage } from './pages/WishlistPage'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
@@ -30,6 +32,8 @@ export function AppRouter() {
         <Route path="/shop" element={<ShopPage />} />
         <Route path="/products/:id" element={<ProductPage />} />
         <Route path="/cart" element={<CartPage />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
+        <Route path="/order-confirmation/:id" element={<OrderConfirmationPage />} />
         <Route
           path="/wishlist"
           element={

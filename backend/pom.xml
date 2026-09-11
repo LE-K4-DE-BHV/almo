@@ -94,6 +94,14 @@
 			<artifactId>bcprov-jdk18on</artifactId>
 			<version>1.80</version>
 		</dependency>
+		<!-- Order-confirmation PDF (Sprint 4). LGPL/MPL-dual-licensed, package renamed to
+		     org.openpdf as of 3.0.0 (was com.lowagie before) - check
+		     https://github.com/LibrePDF/OpenPDF/releases before bumping across a major version. -->
+		<dependency>
+			<groupId>com.github.librepdf</groupId>
+			<artifactId>openpdf</artifactId>
+			<version>3.0.5</version>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator-test</artifactId>
