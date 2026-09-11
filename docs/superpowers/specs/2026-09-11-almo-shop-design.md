@@ -5,8 +5,10 @@ Ziel: aus dem statischen Design in `almofrontenddesign/` eine echte, funktionier
 ## Stack
 
 - Frontend: React + TypeScript, Vite, react-i18next für DE/EN/FR
-- Backend: Spring Boot 3 (Java), Spring Security mit Session-Auth (Cookie, `SameSite=Lax`, `Secure`)
+- Backend: Spring Boot 4.1 (Java 21), Spring Security mit Session-Auth (Cookie, `SameSite=Lax`, `Secure`) - Spring Boot 3 wird von start.spring.io nicht mehr angeboten (Stand Sprint 0), daher Boot 4 statt 3
 - DB: PostgreSQL, Migrationen mit Flyway
+- Session-Store: Redis (Spring Session), damit Logins Deploys/Neustarts überleben
+- Bilder: Cloudinary (kostenloses Tier) statt Speicherung auf dem VPS
 - Alles containerisiert (Docker), läuft auf dem bestehenden VPS
 - Monorepo: `/frontend`, `/backend`, `/infra`
 
@@ -62,16 +64,35 @@ Manuell (braucht root/DNS-Zugriff):
 - nginx-Block oben in `/etc/nginx/sites-available/default` eintragen, `nginx -t` und `systemctl reload nginx`
 - `certbot --nginx -d almo-group.vn-nspace.de` für TLS
 - Brevo API-Key als Secret bereitstellen
+- Cloudinary-Account anlegen, API-Key/Secret als Secret bereitstellen
 - GitHub Actions Deploy-SSH-Secret einrichten
+
+### Secrets-Verwaltung
+
+- CI-seitige Secrets (SSH-Deploy-Key etc.) liegen in GitHub Actions Secrets.
+- Laufzeit-Secrets (DB-Passwort, Brevo API-Key, Cloudinary API-Key/Secret, Redis-Passwort falls gesetzt) liegen in einer `.env`-Datei auf dem VPS, die `docker-compose` einliest. Die `.env` liegt nicht im Repo (steht in `.gitignore`).
+- Kein separates Secret-Management-Tool (Vault o.ä.) für diese Projektgröße nötig.
+
+### Bilder (Cloudinary)
+
+- Admin lädt Produktbilder im Admin-Bereich hoch → Upload geht an das Backend, nicht direkt an Cloudinary.
+- Backend lädt die Datei serverseitig mit dem Cloudinary-API-Secret hoch (Secret ist nie im Frontend sichtbar) und legt sie unter `almo/products/<product-id>/` ab.
+- Cloudinary gibt eine öffentliche URL zurück, die in `products.image_refs` gespeichert wird. Das VPS speichert nie die Bilddatei selbst, nur den Link.
+- Grund für diesen Weg statt Direct-Upload vom Browser: Backend kann Dateigröße/-typ vorher validieren, Secret bleibt serverseitig, bei Admin-only-Uploads ist die zusätzliche Serverlast vernachlässigbar.
+
+### Backup
+
+- Täglicher `pg_dump`-Cronjob auf dem VPS, lokale Aufbewahrung für ein paar Tage. Reicht für Fehlbedienung/kaputtes Update; kein Offsite-Backup in dieser Phase.
 
 ## Datenmodell
 
 - `users`: id, email, password_hash, name, role (CUSTOMER/ADMIN), created_at
+- `password_reset_tokens`: id, user_id, token, expires_at, used_at - für den "Passwort vergessen"-Flow, Reset-Link per Mail über Brevo
 - `categories` + `category_translations`: id, key, translations je Sprache
 - `products`: id, category_id, price, compare_at_price, stock_quantity, metal_color, badge, status (aus stock_quantity abgeleitet: 0 = out_of_stock, <5 = low_stock, sonst in_stock), image_refs, created_at
 - `product_translations`: product_id, lang, name, description, details
 - `reviews`: id, product_id, user_id, rating (1-5), comment, status (PUBLISHED/HIDDEN), created_at
-- `orders`: id, user_id, status (OPEN/CONTACTED/DONE), created_at
+- `orders`: id, user_id, status (OPEN/CONTACTED/DONE), contact_preference (WHATSAPP/EMAIL), shipping_cost, created_at
 - `order_items`: order_id, product_id, quantity, price_at_order
 - `wishlist_items`: user_id, product_id
 - `cart_items`: session_id (oder user_id nach Login), product_id, quantity - Warenkorb hängt an der Session, beim Login wird der Gast-Warenkorb auf den User übertragen
@@ -79,11 +100,19 @@ Manuell (braucht root/DNS-Zugriff):
 
 Produkttexte kommen in eine eigene Tabelle statt in Übersetzungsdateien, damit der Admin sie im Dashboard pflegen kann.
 
+Session-Daten (Warenkorb-Zuordnung, Login-Session) liegen nicht in Postgres, sondern in Redis (Spring Session) - überleben damit Backend-Neustarts/Deploys.
+
+### Versandkosten
+
+Fest im Backend berechnet, nicht nur im Frontend: 3,90 € pauschal, kostenlos ab 30 € Warenkorbwert. Wird bei Bestellabschluss in `orders.shipping_cost` festgeschrieben.
+
 ## Bestellablauf (kein echtes Payment)
 
+Im Checkout gibt es keine Zahlungsart-Auswahl (keine Kreditkarte/PayPal/Rechnung-Optionen) - stattdessen wählt der Kunde nur den gewünschten **Kontaktweg** (WhatsApp oder E-Mail), über den sich der Admin meldet. Das spiegelt den echten Ablauf wider und vermeidet die falsche Erwartung einer echten Zahlungsabwicklung.
+
 Checkout abschicken →
-1. Backend legt `order` + `order_items` an, zieht `stock_quantity` ab
-2. Mail über Brevo an die Admin-Adresse mit Bestelldetails
+1. Backend legt `order` + `order_items` an, zieht `stock_quantity` ab, berechnet Versandkosten (3,90 € / kostenlos ab 30 €)
+2. Mail über Brevo an die Admin-Adresse mit Bestelldetails und gewähltem Kontaktweg
 3. Kunde bekommt direkt ein PDF zum Download (Produkte, Preise, WhatsApp + E-Mail vom Admin), falls sich der Admin nicht meldet, kann der Kunde selbst nachfassen
 
 Echtes Payment (Stripe o.ä.) ist ein späteres Feature, kommt hier noch nicht rein.
@@ -94,8 +123,8 @@ Nur Nutzer, die das Produkt schon bestellt haben, dürfen es bewerten. Admin kan
 
 ## Admin-Bereich
 
-Eigener geschützter Bereich (Rolle ADMIN) in der App:
-- Produkte anlegen/bearbeiten (inkl. Lagermenge, Preis, Kategorie, Metall/Farbe, Bilder, Übersetzungen)
+Eigener geschützter Bereich (Rolle ADMIN) in der App, mit **eigenem Login-Pfad** getrennt vom Kunden-Login (nicht derselbe Login mit Rollenprüfung im Hintergrund):
+- Produkte anlegen/bearbeiten (inkl. Lagermenge, Preis, Kategorie, Metall/Farbe, Bilder via Cloudinary-Upload, Übersetzungen)
 - Kategorien pflegen
 - Bestellungen einsehen, Status ändern
 - Reviews moderieren
@@ -108,17 +137,17 @@ Eigener geschützter Bereich (Rolle ADMIN) in der App:
 
 **Startseite:** Hero, Kategorie-Teaser, Bestseller/Neuheiten.
 
-**Shop-Seite:** Produktliste mit Filtern - Kategorie, Preis (Range), Farbe/Metall, Verfügbarkeit, Neuheiten. Jede Produktkarte hat direkt ein Warenkorb-Icon zum Ein-Klick-Hinzufügen, ohne auf die Produktseite zu müssen.
+**Shop-Seite:** Produktliste mit Filtern - Kategorie, Preis (Range), Farbe/Metall (`metal_color`), Verfügbarkeit, Neuheiten. Aktueller Design-Stand hat nur den Kategorie-Filter, Preis/Verfügbarkeit/Metall-Filter kommen mit dem Backend-Umbau dazu. Jede Produktkarte hat direkt ein Warenkorb-Icon zum Ein-Klick-Hinzufügen, ohne auf die Produktseite zu müssen.
 
 **Produktseite:** Bildergalerie, Beschreibung, Details, Bewertungen (Liste + Formular für Käufer), "zuletzt angesehen". Zwei Buttons: "In den Warenkorb" und "Jetzt kaufen" (geht direkt zum Checkout). Der "In den Warenkorb"-Button bleibt als Sticky-Bar sichtbar, auch wenn man ganz runter zu den Bewertungen scrollt.
 
 **Warenkorb:** Menge ändern, entfernen, Zwischensumme, weiter zur Kasse.
 
-**Checkout:** Kontakt-/Adressdaten, Bestellübersicht, Bestellung abschicken (siehe Bestellablauf oben).
+**Checkout:** Kontakt-/Adressdaten, Kontaktweg-Wahl (WhatsApp/E-Mail statt Zahlungsart), Bestellübersicht inkl. Versandkosten, Bestellung abschicken (siehe Bestellablauf oben).
 
-**Konto:** Profil, Bestellhistorie mit Status, PDF alter Bestellungen erneut runterladen.
+**Konto:** Profil, Bestellhistorie mit Status, PDF alter Bestellungen erneut runterladen, Account selbst löschen.
 
-**Login/Register:** Formulare gegen Backend-Session-Auth.
+**Login/Register:** Formulare gegen Backend-Session-Auth. Login-Seite hat einen "Passwort vergessen"-Link (Reset-Mail über Brevo).
 
 **Wishlist:** Liste, entfernen, in Warenkorb legen.
 
@@ -136,3 +165,15 @@ Reihenfolge:
 ## Sprachen
 
 DE/EN/FR, Basis sind die Übersetzungen aus `almofrontenddesign/js/i18n.js`, im Frontend mit react-i18next.
+
+## Bewusst außerhalb des MVP-Scopes (Stand 2026-09-11)
+
+Aktuell Lernprojekt ohne Gewerbe, kein echter Verkauf. Diese Themen werden deshalb bewusst nicht jetzt gebaut, sondern erst wenn ein Gewerbe existiert bzw. sie konkret gebraucht werden:
+
+- **Rechtsseiten** (Impressum, Datenschutzerklärung, AGB, Widerrufsbelehrung) - Footer zeigt weiterhin nur Platzhalter-Text ohne echte Links/Seiten
+- **Cookie-Consent-Banner** - erst relevant, sobald Tracking/Analytics oder Marketing-Cookies eingebaut werden
+- **DSGVO-Datenexport/-löschung** (über die reine Account-Selbstlöschung hinaus)
+- **MwSt.-Hinweis** an der Preisanzeige
+- **Alternativen zu Cloudinary** (S3-kompatibler Object Storage) - erst falls Cloudinary-Limits/Kosten zum Problem werden
+
+Diese Punkte kommen wieder auf den Tisch, sobald ein Gewerbe angemeldet ist oder der Shop wirklich live geht.

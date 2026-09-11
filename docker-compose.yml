@@ -1,0 +1,57 @@
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-almo}
+      POSTGRES_USER: ${DB_USER:-almo}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-almo}
+    volumes:
+      - almo_pgdata:/var/lib/postgresql/data
+    networks:
+      - almo_internal
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    networks:
+      - almo_internal
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      - db
+      - redis
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-almo}
+      DB_USER: ${DB_USER:-almo}
+      DB_PASSWORD: ${DB_PASSWORD:-almo}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      SERVER_PORT: 8094
+      BREVO_API_KEY: ${BREVO_API_KEY:-}
+      CLOUDINARY_URL: ${CLOUDINARY_URL:-}
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-8094}:8094"
+    networks:
+      - almo_internal
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-8093}:80"
+    networks:
+      - almo_internal
+
+networks:
+  almo_internal:
+    driver: bridge
+
+volumes:
+  almo_pgdata:
