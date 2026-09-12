@@ -1,6 +1,6 @@
 # Almo Shop - Backlog & Sprintplan
 
-Grundlage: [2026-09-11-almo-shop-design.md](superpowers/specs/2026-09-11-almo-shop-design.md). Team: 2-4 Leute, Sprintlänge 2 Wochen. 7 Sprints, aufeinander aufbauend - jeder Sprint endet mit einem lauffähigen Zwischenstand.
+Grundlage: [2026-09-11-almo-shop-design.md](superpowers/specs/2026-09-11-almo-shop-design.md). Team: 2-4 Leute, Sprintlänge 2 Wochen. Ursprünglich 7 Sprints geplant (0-6, siehe Spec) - seit der Shopify-Recherche vom 2026-09-12 ([docs/research/2026-09-12-shopify-feature-research.md](research/2026-09-12-shopify-feature-research.md)) um Sprint 7-12 erweitert. Jeder Sprint endet mit einem lauffähigen Zwischenstand.
 
 ## Sprint 0 - Fundament
 
@@ -219,6 +219,60 @@ Reihe von Funden aus den ersten echten CI-Läufen mit scharf geschaltetem `NVD_A
 - Admin-Bereich (`AdminLayout`, Produkte/Kategorien/Bestellungen/Reviews) durchgesehen - schon konsistent mit `brand-*`-Tokens, keine weiteren Änderungen nötig.
 - **Bug gefunden und gefixt: Produktbild-Upload schlug fehl** (`UnsatisfiedLinkError: brotli4j.decoder.DecoderJNI.nativeCreate`). Ursache: `openpdf` (PDF-Erzeugung für Bestellbestätigungen) zieht transitiv `brotli4j` als Abhängigkeit, Apache HttpClient5 (von der Cloudinary-SDK für den Bild-Upload genutzt) aktiviert Brotli-Dekompression automatisch, sobald die Bibliothek im Classpath liegt, und stürzt auf diesem JDK-25-Setup beim ersten Cloudinary-Response ab. Gefixt mit einer `<exclusion>` auf `brotli4j` im `openpdf`-Dependency-Eintrag in `backend/pom.xml` - Upload und PDF-Erzeugung beide gegengetestet, funktionieren unabhängig voneinander weiter.
 - **Bewertungen schreiben umgesetzt** (war bisher nur lesbar): `POST /api/products/{productId}/reviews`, nur für eingeloggte Nutzer mit mindestens einer Bestellung, die das Produkt enthält (`ReviewRepository.hasPurchased`), maximal eine Bewertung pro Nutzer/Produkt (`hasReviewed`). 403 ohne Kauf, 409 bei Doppel-Versuch, sonst 201 mit der neuen Bewertung. Frontend: Formular auf der Produktseite (Sterne-Auswahl + optionaler Kommentar), Login-Hinweis für ausgeloggte Nutzer, "Danke"-Meldung nach erfolgreichem Absenden. Alle vier Fälle (kein Kauf, nach Kauf, Doppel-Versuch, öffentliches Lesen ohne Login) end-to-end gegen einen isolierten Test-Stack durchgespielt.
+
+## Sprint 7 - Header-Redesign
+
+Ziel: Kopfzeile (Kunde + Admin) folgt dem Shopify-Muster statt Klartext-Name/Login-Link.
+
+Geplanter Umfang (Details/Technische Entscheidungen folgen, wenn der Sprint startet):
+- Profil-Icon mit Initialen statt Name/"Login"-Text, Klick öffnet Dropdown (Konto, Sprache, Logout) - Kunden-Header **und** Admin-Header
+- Sprachumschalter (DE/EN/FR) auch im Admin-Bereich (bisher nur Kunden-Header)
+- Ggf. Produktkarten-Badges (Rabatt-%, Bewertungsanzahl direkt auf der Kachel)
+- Ggf. visueller Fortschrittsbalken zur Gratis-Versand-Schwelle im Warenkorb
+
+## Sprint 8 - Rabattcodes
+
+Ziel: Admin kann Rabattcodes anlegen, Kund:innen können sie im Warenkorb/Checkout einlösen.
+
+Geplanter Umfang:
+- Datenmodell für Rabatte (Code vs. automatisch, Prozentsatz vs. fester Betrag, Mindestbestellwert, Gültigkeitszeitraum, Nutzungslimits, Kombinierbarkeit)
+- Admin-UI zum Anlegen/Verwalten
+- Rabattcode-Feld im Warenkorb/Checkout, serverseitige Anwendung auf die Bestellsumme
+
+## Sprint 9 - Erweitertes Produktmodell
+
+Ziel: Strukturierte Schmuck-Attribute statt nur `metalColor`/`badge`, näher an Shopifys Kategorie-Metafeldern.
+
+Geplanter Umfang:
+- Neue strukturierte Felder: Ringgröße, Steinform, Edelsteinart, Schmuckmaterial (o.ä., je nach Kategorie)
+- SKU, Barcode, Kosten pro Artikel (Margen-Überblick) im Admin-Produktformular
+- Zu prüfen: Produkte in mehreren Kollektionen statt einer festen `category_id`-FK (größere Datenmodell-Entscheidung, extra Abstimmung wert)
+
+## Sprint 10 - Mitarbeiterrollen im Admin
+
+Ziel: Mehrere Admin-Konten mit unterschiedlichen Rechten statt einem einzigen Admin-Level.
+
+Geplanter Umfang:
+- Rollenmodell (z. B. vordefinierte Vorlagen wie Support/Marketing/Vertrieb/Editor/Admin statt komplett freier Rechtevergabe, siehe Shopify-Recherche)
+- Rechteprüfung pro Admin-Endpoint statt nur `hasRole("ADMIN")`
+- Admin-UI zum Einladen/Verwalten von Mitarbeiterkonten
+
+## Sprint 11 - Self-Service-Rückgaben & Shop-Guthaben
+
+Ziel: Kund:innen können Rückgabe/Stornierung selbst anfragen, Admin entscheidet/erstattet - optional als Guthaben statt Geld-zurück.
+
+Geplanter Umfang:
+- Rückgabe-/Stornierungsanfrage im Kundenkonto (Datenmodell + Status-Flow)
+- Admin-Ansicht zum Bearbeiten/Genehmigen/Ablehnen
+- Guthabenkonto pro Kunde (optional, statt Rückerstattung)
+
+## Sprint 12 - KI-Funktionen im Admin
+
+Ziel: Mindestens eine KI-gestützte Arbeitserleichterung im Admin-Bereich, analog zu Shopify Sidekick/Magic.
+
+Noch offen, braucht eigene Recherche vor dem Start (KI-Anbieter, Kosten pro Aufruf, Datenschutz bei extern gehosteten Modellen):
+- Kandidat: Produktbeschreibungen/SEO-Texte per KI vorschlagen lassen beim Anlegen eines Produkts
+- Weitere Kandidaten aus der Shopify-Recherche (Preisstrategie-Hinweise, Lagerbestand-Warnungen) möglich, aber noch nicht priorisiert
 
 ## Bewusst zurückgestellt (nicht in obigen Sprints)
 
