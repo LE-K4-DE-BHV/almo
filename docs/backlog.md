@@ -346,6 +346,22 @@ Ziel: Admin-Dashboard soll mehrere Nutzer vertragen. Admins und Mitarbeiter (STA
 
 Durchgetestet gegen einen isolierten Test-Stack: Admin erstellt Mitarbeiter (201) → doppelte E-Mail (409) → Mitarbeiter setzt Passwort über den Reset-Link → Mitarbeiter-Login über den Admin-Login-Endpoint (STAFF-Rolle akzeptiert) → Mitarbeiter hat Zugriff auf den allgemeinen Admin-Bereich (Produkte, 200) → Mitarbeiter bekommt 403 bei `/api/admin/staff` (lesen und erstellen) → Admin löscht Mitarbeiter (204) → Mitarbeiter-Session sofort tot (401/403) → Versuch, einen Admin-Account über den Staff-Endpoint zu löschen, liefert 404.
 
+## Reset-/Einladungs-Links zeigten auf localhost (2026-09-12)
+
+**Bug:** Passwort-Reset- und Mitarbeiter-Einladungs-Mails enthielten einen Link auf `http://localhost:8093/...` - unbrauchbar für jeden außerhalb des VPS.
+
+**Root Cause:** `FRONTEND_URL` war in der Produktions-`.env` nicht gesetzt, `docker-compose.yml`s Default (`${FRONTEND_URL:-http://localhost:8093}`) landete dadurch im laufenden Backend-Container. `AuthService.requestPasswordReset` baut den Link aus genau dieser Property (`app.auth.frontend-url`, siehe `AuthProperties`).
+
+**Fix:** `.env` bekam `FRONTEND_URL=https://almo-group.vn-nspace.de`, Backend neu gestartet, per echtem `docker exec ... env` gegengeprüft und über einen echten Reset-Request verifiziert.
+
+## Nachtrag: Links in Mails weiterhin manchmal nicht erreichbar (2026-09-12)
+
+Nach dem `FRONTEND_URL`-Fix kamen Mails mit korrektem Link an, der Link war für den Nutzer trotzdem nicht erreichbar (`DNS_PROBE_FINISHED_NXDOMAIN`) - auf mehreren Geräten/Netzwerken reproduzierbar, während der Server selbst und ein externer Testpunkt (unabhängig vom VPS) den exakt gleichen Link mit demselben Token beide erfolgreich luden (200).
+
+**Root Cause:** Die zwei Strato-Nameserver für `vn-nspace.de` sind inkonsistent - `docks07.rzone.de` kennt den A-Record für `almo-group.vn-nspace.de`, `shades14.rzone.de` nicht (0 Answers, obwohl beide Server dieselbe SOA-Serial melden und `shades14` den A-Record für das nackte `vn-nspace.de` korrekt liefert). Je nachdem, welchen der beiden Nameserver ein DNS-Resolver befragt, bekommt man ein echtes NXDOMAIN oder die korrekte IP - unabhängig von Caching auf Nutzerseite.
+
+**Nicht selbst behebbar** (kein Zugriff auf Stratos Nameserver-Infrastruktur) - Empfehlung an den Nutzer: A-Record für `almo-group` bei Strato löschen und neu anlegen (erzwingt meist einen frischen Zone-Push an beide NS), sonst Strato-Support kontaktieren.
+
 ## Bewusst zurückgestellt (nicht in obigen Sprints)
 
 Siehe Spec-Abschnitt "Bewusst außerhalb des MVP-Scopes": Rechtsseiten (Impressum/Datenschutz/AGB/Widerruf), Cookie-Consent, DSGVO-Datenexport, MwSt.-Hinweis, Object-Storage-Alternativen zu Cloudinary, echtes Payment (Stripe o.ä.). Kommen als eigene Sprints, sobald ein Gewerbe existiert bzw. der Shop live geht.
