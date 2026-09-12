@@ -106,5 +106,41 @@
   "account_delete_title": "Delete account",
   "account_delete_button": "Delete account permanently",
   "account_delete_confirm": "Are you sure? This can't be undone.",
-  "account_delete_blocked": "Account can't be deleted: you already have orders. Contact the shop owner."
+  "account_delete_blocked": "Account can't be deleted: you already have orders. Contact the shop owner.",
+  "account_delete_error_generic": "Failed to delete account",
+  "account_title": "Account",
+  "account_logout": "Logout",
+
+  "login_title": "Login",
+  "login_email": "Email",
+  "login_password": "Password",
+  "login_submit": "Login",
+  "login_submitting": "Logging in...",
+  "login_forgot_password": "Forgot password?",
+  "login_no_account": "No account?",
+  "login_register_link": "Register",
+  "login_error_generic": "Login failed",
+
+  "register_title": "Register",
+  "register_name": "Name",
+  "register_email": "Email",
+  "register_password": "Password",
+  "register_submit": "Register",
+  "register_submitting": "Creating account...",
+  "register_have_account": "Already have an account?",
+  "register_login_link": "Login",
+  "register_error_generic": "Registration failed",
+
+  "forgot_password_title": "Forgot password",
+  "forgot_password_email": "Email",
+  "forgot_password_submit": "Send reset link",
+  "forgot_password_submitting": "Sending...",
+  "forgot_password_success": "If that email is registered, a reset link is on its way.",
+
+  "reset_password_title": "Set a new password",
+  "reset_password_new_password": "New password",
+  "reset_password_submit": "Set new password",
+  "reset_password_submitting": "Saving...",
+  "reset_password_missing_token": "This reset link is missing its token.",
+  "reset_password_error_generic": "Reset failed"
 }

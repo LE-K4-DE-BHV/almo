@@ -1,17 +1,30 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
 import { useTranslation } from 'react-i18next'
+import { subscribeToNewsletter } from '../api/newsletter'
+import { ApiError } from '../api/client'
 
 export function Footer() {
   const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [subscribed, setSubscribed] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  function handleSubscribe(e: FormEvent) {
+  async function handleSubscribe(e: FormEvent) {
     e.preventDefault()
-    // Newsletter backend endpoint is Sprint 6 (see docs/backlog.md) - this just confirms
-    // visually for now so the form isn't dead weight while building the rest of the page.
-    setSubscribed(true)
+    setError(null)
+    setSubmitting(true)
+    try {
+      await subscribeToNewsletter(email)
+      // Shown the same way whether the email was new or already subscribed - see
+      // NewsletterRepository, resubscribing isn't an error worth surfacing.
+      setSubscribed(true)
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'Subscription failed')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -24,21 +37,29 @@ export function Footer() {
           {subscribed ? (
             <p className="text-sm text-brand-text-muted">✓</p>
           ) : (
-            <form onSubmit={handleSubscribe} className="flex gap-2">
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={t('footer_newsletter_placeholder')}
-                className="min-w-0 flex-1 rounded border border-brand-border bg-brand-bg px-3 py-1.5 text-sm outline-none focus:border-brand-accent"
-              />
-              <button
-                type="submit"
-                className="shrink-0 rounded bg-brand-text px-3 py-1.5 text-xs uppercase tracking-wide text-white hover:bg-black"
-              >
-                {t('footer_newsletter_button')}
-              </button>
+            <form onSubmit={handleSubscribe} className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={t('footer_newsletter_placeholder')}
+                  className="min-w-0 flex-1 rounded border border-brand-border bg-brand-bg px-3 py-1.5 text-sm outline-none focus:border-brand-accent"
+                />
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="shrink-0 rounded bg-brand-text px-3 py-1.5 text-xs uppercase tracking-wide text-white hover:bg-black disabled:opacity-50"
+                >
+                  {t('footer_newsletter_button')}
+                </button>
+              </div>
+              {error && (
+                <p role="alert" className="text-xs text-brand-sale">
+                  {error}
+                </p>
+              )}
             </form>
           )}
         </div>

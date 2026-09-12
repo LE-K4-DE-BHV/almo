@@ -44,7 +44,9 @@ export function AccountPage() {
     } catch (e) {
       // 409 (has orders) is the one realistic failure here - see AccountHasOrdersException on
       // the backend - shown as-is rather than the generic apiFetch message.
-      setDeleteError(e instanceof ApiError ? t('account_delete_blocked') : 'Failed to delete account')
+      setDeleteError(
+        e instanceof ApiError ? t('account_delete_blocked') : t('account_delete_error_generic'),
+      )
     } finally {
       setDeleting(false)
     }
@@ -52,7 +54,7 @@ export function AccountPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-10">
-      <h1 className="mb-2 text-2xl font-semibold">Account</h1>
+      <h1 className="mb-2 text-2xl font-semibold">{t('account_title')}</h1>
       <p className="mb-8 text-brand-text-muted">
         {user.name} ({user.email})
       </p>
@@ -95,7 +97,7 @@ export function AccountPage() {
         onClick={handleLogout}
         className="rounded border border-brand-border px-4 py-2 text-xs uppercase tracking-wide hover:bg-brand-bg"
       >
-        Logout
+        {t('account_logout')}
       </button>
 
       <section className="mt-12 border-t border-brand-border pt-6">

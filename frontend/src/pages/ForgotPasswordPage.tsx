@@ -1,7 +1,9 @@
 import { useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import * as authApi from '../api/auth'
 
 export function ForgotPasswordPage() {
+  const { t } = useTranslation()
   const [email, setEmail] = useState('')
   // No error state on purpose: the backend always returns 202 regardless of whether the email
   // exists (see AuthService.requestPasswordReset) - showing a distinct error here would undo
@@ -21,14 +23,14 @@ export function ForgotPasswordPage() {
   }
 
   if (submitted) {
-    return <p>If that email is registered, a reset link is on its way.</p>
+    return <p>{t('forgot_password_success')}</p>
   }
 
   return (
     <form onSubmit={handleSubmit}>
-      <h1>Forgot password</h1>
+      <h1>{t('forgot_password_title')}</h1>
       <label>
-        Email
+        {t('forgot_password_email')}
         <input
           type="email"
           value={email}
@@ -38,7 +40,7 @@ export function ForgotPasswordPage() {
         />
       </label>
       <button type="submit" disabled={submitting}>
-        {submitting ? 'Sending...' : 'Send reset link'}
+        {submitting ? t('forgot_password_submitting') : t('forgot_password_submit')}
       </button>
     </form>
   )

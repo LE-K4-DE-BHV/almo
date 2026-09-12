@@ -106,5 +106,41 @@
   "account_delete_title": "Supprimer le compte",
   "account_delete_button": "Supprimer définitivement le compte",
   "account_delete_confirm": "Êtes-vous sûr(e) ? Cette action est irréversible.",
-  "account_delete_blocked": "Compte impossible à supprimer : des commandes existent déjà. Contactez le responsable de la boutique."
+  "account_delete_blocked": "Compte impossible à supprimer : des commandes existent déjà. Contactez le responsable de la boutique.",
+  "account_delete_error_generic": "Échec de la suppression du compte",
+  "account_title": "Compte",
+  "account_logout": "Déconnexion",
+
+  "login_title": "Connexion",
+  "login_email": "E-mail",
+  "login_password": "Mot de passe",
+  "login_submit": "Se connecter",
+  "login_submitting": "Connexion en cours...",
+  "login_forgot_password": "Mot de passe oublié ?",
+  "login_no_account": "Pas encore de compte ?",
+  "login_register_link": "S'inscrire",
+  "login_error_generic": "Échec de la connexion",
+
+  "register_title": "Inscription",
+  "register_name": "Nom",
+  "register_email": "E-mail",
+  "register_password": "Mot de passe",
+  "register_submit": "Créer un compte",
+  "register_submitting": "Création du compte...",
+  "register_have_account": "Déjà un compte ?",
+  "register_login_link": "Se connecter",
+  "register_error_generic": "Échec de l'inscription",
+
+  "forgot_password_title": "Mot de passe oublié",
+  "forgot_password_email": "E-mail",
+  "forgot_password_submit": "Envoyer le lien de réinitialisation",
+  "forgot_password_submitting": "Envoi en cours...",
+  "forgot_password_success": "Si cette adresse e-mail est enregistrée, un lien de réinitialisation est en route.",
+
+  "reset_password_title": "Définir un nouveau mot de passe",
+  "reset_password_new_password": "Nouveau mot de passe",
+  "reset_password_submit": "Enregistrer le nouveau mot de passe",
+  "reset_password_submitting": "Enregistrement...",
+  "reset_password_missing_token": "Ce lien de réinitialisation ne contient pas de jeton.",
+  "reset_password_error_generic": "Échec de la réinitialisation"
 }

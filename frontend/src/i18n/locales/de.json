@@ -106,5 +106,41 @@
   "account_delete_title": "Account löschen",
   "account_delete_button": "Account unwiderruflich löschen",
   "account_delete_confirm": "Bist du sicher? Das kann nicht rückgängig gemacht werden.",
-  "account_delete_blocked": "Account kann nicht gelöscht werden: du hast bereits Bestellungen. Wende dich an den Shop-Betreiber."
+  "account_delete_blocked": "Account kann nicht gelöscht werden: du hast bereits Bestellungen. Wende dich an den Shop-Betreiber.",
+  "account_delete_error_generic": "Account konnte nicht gelöscht werden",
+  "account_title": "Konto",
+  "account_logout": "Logout",
+
+  "login_title": "Login",
+  "login_email": "E-Mail",
+  "login_password": "Passwort",
+  "login_submit": "Einloggen",
+  "login_submitting": "Anmeldung läuft...",
+  "login_forgot_password": "Passwort vergessen?",
+  "login_no_account": "Noch kein Konto?",
+  "login_register_link": "Registrieren",
+  "login_error_generic": "Login fehlgeschlagen",
+
+  "register_title": "Registrieren",
+  "register_name": "Name",
+  "register_email": "E-Mail",
+  "register_password": "Passwort",
+  "register_submit": "Konto erstellen",
+  "register_submitting": "Konto wird erstellt...",
+  "register_have_account": "Schon ein Konto?",
+  "register_login_link": "Login",
+  "register_error_generic": "Registrierung fehlgeschlagen",
+
+  "forgot_password_title": "Passwort vergessen",
+  "forgot_password_email": "E-Mail",
+  "forgot_password_submit": "Reset-Link senden",
+  "forgot_password_submitting": "Wird gesendet...",
+  "forgot_password_success": "Falls diese E-Mail-Adresse registriert ist, ist ein Reset-Link unterwegs.",
+
+  "reset_password_title": "Neues Passwort festlegen",
+  "reset_password_new_password": "Neues Passwort",
+  "reset_password_submit": "Neues Passwort speichern",
+  "reset_password_submitting": "Wird gespeichert...",
+  "reset_password_missing_token": "Dieser Reset-Link hat kein Token.",
+  "reset_password_error_generic": "Zurücksetzen fehlgeschlagen"
 }

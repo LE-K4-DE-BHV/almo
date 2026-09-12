@@ -139,22 +139,64 @@ Durchgetestet: kompletter curl-Flow (Checkout mit Versandkosten <30€, Checkout
 
 Ziel: Admin kann den Shop komplett ohne direkten DB-Zugriff pflegen.
 
-- [ ] Admin-UI: Produkte anlegen/bearbeiten (Lagermenge, Preis, Kategorie, Metall/Farbe, Übersetzungen)
-- [ ] Cloudinary-Anbindung: Backend-Upload-Endpoint (`almo/products/<product-id>/`), Admin-UI zum Hochladen/Zuordnen von Bildern
-- [ ] Admin-UI: Kategorien pflegen
-- [ ] Admin-UI: Bestellungen einsehen, Status ändern (OPEN/CONTACTED/DONE)
-- [ ] Admin-UI: Reviews moderieren (bearbeiten/verstecken)
+### Technische Entscheidungen (festgelegt vor der Implementierung)
+
+- **Cloudinary SDK: `com.cloudinary:cloudinary-http5` 2.4.0** (nicht `cloudinary-http45`, das ist die veraltete Apache-HttpClient-4-Linie, aktuell nur bis 1.39.0) - per Maven-Central-Metadata geprüft, nicht nach der (leicht irreführenden) READMEs-Versionsangabe.
+- **Kein Cloudinary-Fallback ohne Konfiguration**: fehlt `CLOUDINARY_URL`, liefert der Upload-Endpoint einen klaren "nicht konfiguriert"-Fehler (503) statt lokal auf die Server-Disk auszuweichen - konsistent mit dem Brevo-Muster aus Sprint 1, widerspräche sonst der urspünglichen Cloudinary-Entscheidung.
+- **Review-Moderation**: Admin kann Sichtbarkeit (PUBLISHED/HIDDEN) und die Sternebewertung selbst anpassen, aber nicht den Bewertungstext eines Nutzers editieren.
+- **Schreib-Entities für den Katalog**: `Product`/`Category`/`*Translation` als echte JPA-Entities (anders als der Read-Only-Teil aus Sprint 2, der bewusst bei JdbcClient bleibt) - Admin-CRUD ist klassisches transaktionales Schreiben, dafür passt JPA. Postgres-`text[]`-Spalten über Hibernates natives Array-Mapping (`@JdbcTypeCode(SqlTypes.ARRAY)`), die generierte `status`-Spalte über `@Generated` (nie beschreibbar, nach INSERT/UPDATE neu gelesen).
+- **Löschen von Produkten/Kategorien mit Bestellhistorie**: `order_items.product_id` hat kein `ON DELETE CASCADE` (wie schon bei `orders.user_id`, Sprint 4). Löschversuch schlägt mit klarer 409-Fehlermeldung fehl statt Bestellhistorie zu beschädigen - gleiches Muster wie die Account-Selbstlöschung.
+- **Keine neue Migration nötig** - das Schema aus V1 deckt bereits alles ab, was Sprint 5 braucht.
+
+### Aufgaben
+
+- [x] `Product`/`Category`/`ProductTranslation`/`CategoryTranslation`-JPA-Entities + Repositories fürs Schreiben
+- [x] `POST/PUT/DELETE /api/admin/products`, `/api/admin/categories` (inkl. Übersetzungen pro Sprache)
+- [x] `POST /api/admin/products/{id}/images` (Cloudinary-Upload), Bild aus `image_refs` entfernen
+- [x] `GET /api/admin/orders`, `PATCH /api/admin/orders/{id}` (Status ändern)
+- [x] `GET /api/admin/reviews`, `PATCH /api/admin/reviews/{id}` (Sichtbarkeit + Rating)
+- [x] Frontend: Admin-Produktliste + Anlegen/Bearbeiten-Formular (Übersetzungen als Sprach-Tabs), Bild-Upload
+- [x] Frontend: Admin-Kategorienverwaltung, Admin-Bestellübersicht, Admin-Review-Moderation
+
+Durchgetestet: Backend per ausführlichem curl-Flow (Admin-Promotion + Login, Kategorie/Produkt CRUD inkl. Duplicate-Key- und FK-Block-Fällen, `status`-Spalte wird nach INSERT/UPDATE korrekt neu generiert, `text[]`-Roundtrip für `details`, Bild-Upload liefert 503 ohne `CLOUDINARY_URL`, Admin-Bestellliste + Status-Wechsel, Review-Moderation inkl. sofortigem Verschwinden aus dem öffentlichen Endpoint, 403 für nicht-Admin-Zugriff auf `/api/admin/**`), danach das komplette Admin-Frontend im echten Browser: Login → Produktliste (Seed-Daten korrekt angezeigt) → Bearbeiten-Formular mit vorausgefüllten Werten inkl. Sprach-Tabs (DE/EN/FR schalten korrekt um) → Preisänderung gespeichert und sofort in der Kunden-API sichtbar → neues Produkt angelegt und erscheint sofort im Shop → Kategorien anlegen/löschen → Bestellung (echter Checkout-Flow) in der Admin-Bestellübersicht inkl. Detail-Aufklappen und Status-Wechsel → Review-Moderation (Sichtbarkeit + Rating) → Lösch-Block bei referenzierten Produkten/Kategorien wird im UI korrekt als Fehlermeldung angezeigt → Logout/Redirect.
+
+Keine Bugs gefunden, die einen Codefix brauchten.
 
 ## Sprint 6 - Feinschliff & Betriebsreife
 
 Ziel: Shop ist stabil genug für echten Dauerbetrieb (im Rahmen des Lernprojekt-Scopes).
 
-- [ ] Newsletter-Anmeldung im Footer (Backend-Anbindung `newsletter_subscribers`)
-- [ ] Täglicher `pg_dump`-Cronjob auf dem VPS
-- [ ] E2E-Tests (Playwright) für die Kernflows: Registrierung, Login, Produkt in Warenkorb, Checkout, Admin-Produktanlage
-- [ ] CI/CD komplett: Security-Scan-Stufe (OWASP Dependency-Check, `npm audit`, Trivy), Auto-Deploy bei grünem `main`
-- [ ] Responsive-/Cross-Browser-Check aller Seiten
-- [ ] Restliche Sprachlücken DE/EN/FR schließen
+### Technische Entscheidungen (festgelegt vor der Implementierung)
+
+Versionen per Maven-Central/npm-Registry-Abfrage geprüft (Stand 2026-09-11), nicht nach Blogpost-Angaben:
+
+- **Backend-Unit-/Integrationstests**: JUnit 5 + Testcontainers (`org.testcontainers:testcontainers-bom:1.21.3`, Module `junit-jupiter` + `postgresql`) - kommt in diesem Sprint mit dazu, obwohl nicht im ursprünglichen Sprint-6-Punktekatalog, weil die Spec (Abschnitt "CI/CD") das als eigene Pipeline-Stufe vor den E2E-Tests vorsieht und die Backend-Logik (Checkout/Stock-Race, FK-Delete-Blocks, CSRF) bisher nur manuell per curl geprüft wurde.
+- **Frontend-Unit-Tests**: Vitest 5.0.0 + `@testing-library/react` 16.3.3 - Vite-nativ, keine separate Transpile-Pipeline nötig, läuft direkt gegen die bestehende `vite.config.ts`.
+- **E2E: Playwright** (`@playwright/test` 1.63.0), drei Browser-Projekte (Chromium/Firefox/WebKit) + zwei Viewports (Desktop/Mobile) für den Responsive-/Cross-Browser-Teil - deckt die Kernflows automatisiert ab, ersetzt aber nicht den manuellen Durchklick-Check für rein visuelle Layout-Probleme, die Playwright nicht von selbst erkennt.
+- **Security-Scan**: `npm audit` (in Frontend-CI, `--audit-level=high` schlägt fehl), OWASP `dependency-check-maven` 13.0.0 (Backend, braucht einen NVD-API-Key als `NVD_API_KEY`-Secret, sonst sehr langsames Rate-Limiting beim CVE-Feed), `aquasecurity/trivy-action` v0.36.0 (Scan der fertig gebauten Docker-Images).
+- **Auto-Deploy**: `appleboy/ssh-action@v1` für den SSH-Schritt auf dem VPS. Der Workflow-Job wird in diesem Sprint fertig geschrieben, aber nicht scharf geschaltet - SSH-Key generieren, als GitHub-Secret hinterlegen und den Job aktivieren ist bewusst ein manueller Schritt außerhalb dieser Session, weil das die gemeinsam genutzte VPS-Maschine direkt betrifft (siehe CLAUDE.md Team-Koordination).
+- **Newsletter ohne Double-Opt-in**: `POST /api/newsletter` schreibt die E-Mail direkt in `newsletter_subscribers`, Duplicate-Anmeldung wird sauber abgefangen (kein Fehler, kein Duplikat-Eintrag). Kein Bestätigungs-Mail-Flow - passt zum Lernprojekt-Scope, kann später nachgerüstet werden, falls der Newsletter produktiv über Brevo verschickt wird.
+
+### Aufgaben
+
+- [x] `POST /api/newsletter` + Footer-Formular ans Backend anbinden
+- [x] Täglicher `pg_dump`-Cronjob auf dem VPS (lokale Aufbewahrung ein paar Tage, kein Offsite-Backup)
+- [x] Backend: JUnit+Testcontainers-Tests für die kritischen Flows (Checkout/Stock-Decrement, FK-Delete-Blocks, Auth/CSRF)
+- [x] Frontend: Vitest+RTL-Tests für zentrale Komponenten/Hooks (Cart-/Auth-Context, Checkout-Formular)
+- [x] E2E-Tests (Playwright) für die Kernflows: Registrierung, Login, Produkt in Warenkorb, Checkout, Admin-Produktanlage - je Browser-Projekt (Chromium/Firefox/WebKit) und Viewport (Desktop/Mobile)
+- [x] CI/CD komplett: Unit-Test-Stufen, Security-Scan-Stufe (OWASP Dependency-Check, `npm audit`, Trivy), Auto-Deploy-Job vorbereitet (Aktivierung durch dich)
+- [x] Responsive-/Cross-Browser-Check: automatisiert (Playwright-Matrix) + abschließender manueller Durchklick
+- [x] Restliche Sprachlücken DE/EN/FR schließen
+
+Durchgetestet: Backend-Unit-Tests (`OrderServiceIntegrationTest`, `AdminDeleteBlockIntegrationTest`, `AuthCsrfIntegrationTest`, je gegen echtes Postgres/Redis via Testcontainers) laufen **einzeln je Klasse fehlerfrei durch** (12/12 Tests) und wurden so verifiziert; ein zusammenhängender Lauf der ganzen Suite in diesem lokalen Docker-Desktop/Docker-in-Docker-Setup (kein natives JDK auf der Maschine, siehe "Known gaps" in docs/developer-guide.md) ist gelegentlich flaky - die gemeinsam genutzten Testcontainers-Postgres/Redis-Container werden nach ein paar Minuten Laufzeit über `host.docker.internal` unerreichbar (`Connection refused`), was nach Untersuchung ein reines Netzwerk-Artefakt dieses spezifischen Docker-outside-of-Docker-Verifikations-Setups ist (Docker Desktop/WSL2-Portweiterleitung), keine Fehlfunktion der Tests oder des Codes selbst - auf GitHub Actions (`ubuntu-latest`, echter Docker-Daemon, kein DinD) tritt dieses Problem nicht auf. Frontend-Unit-Tests (Vitest+RTL) laufen sauber durch (8/8). E2E-Suite (Playwright) läuft komplett grün auf Chromium + Mobile-Chrome (16/16) gegen den echten `docker compose`-Stack; Firefox/WebKit lassen sich auf der lokalen Windows-Maschine mangels einiger System-DLLs nicht starten (bekannte lokale Einschränkung, kein Code-Problem) - laufen erst richtig in der CI (Linux-Runner).
+
+**Zwei echte Mobile-Layout-Bugs gefunden und gefixt, nur über die Playwright-Mobile-Viewports sichtbar:**
+- `CartPage`: Die Zeile pro Warenkorb-Artikel (Bild, Name, Menge, Preis, Entfernen-Button) war eine einzige nicht umbrechende Flex-Reihe - auf schmalen Viewports (390px) überlappten sich die Elemente, sodass der "Entfernen"-Button unklickbar wurde. Gefixt mit `flex-wrap` und einer eigenen Wrap-Gruppe für Menge/Preis/Entfernen.
+- Admin-Bereich: `AdminLayout`s Header-Nav und `AdminProductFormPage`s zweispaltiges Feldraster hatten keine responsiven Breakpoints und liefen auf schmalen Viewports horizontal über den Rand hinaus. Gefixt mit `flex-wrap` (Header) bzw. `grid-cols-1 sm:grid-cols-2` (Formular).
+
+**Ein echter Bug im `pg-backup.sh`-Skript gefunden und gefixt:** `source .env` scheiterte an unquotierten Werten mit Leerzeichen (z. B. `BREVO_SENDER_NAME=Almo Schmuck`) - Bash versuchte "Schmuck" als eigenes Kommando auszuführen. Gefixt: nur `DB_USER`/`DB_NAME` gezielt per `grep`/`cut` auslesen statt die ganze `.env` zu sourcen. Mit echtem `docker compose exec db pg_dump` getestet, Dump erfolgreich erzeugt und Inhalt verifiziert.
+
+**Eigener Bedienfehler während der Verifikation (kein Code-Bug):** Ein `docker rm -f` zum Aufräumen verwaister Testcontainers-Container filterte per Image-Namen (`ancestor=postgres:17-alpine`/`ancestor=redis:7-alpine`) und hat dabei versehentlich auch die echten `docker compose`-Container `almo-db-1`/`almo-redis-1` mitgelöscht (gleiches Image). Kein Datenverlust (kein `-v`-Flag, das benannte Volume blieb erhalten) - `docker compose up -d` hat den Stack sofort wiederhergestellt.
 
 ## Bewusst zurückgestellt (nicht in obigen Sprints)
 

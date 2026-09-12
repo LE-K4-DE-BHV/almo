@@ -43,41 +43,47 @@ export function CartPage() {
         {cart.items.map((item) => (
           <div
             key={item.id}
-            className="flex items-center gap-4 rounded border border-brand-border p-4"
+            className="flex flex-wrap items-center gap-4 rounded border border-brand-border p-4"
           >
             {item.imageRef && (
               <img src={item.imageRef} alt={item.name} className="h-20 w-20 rounded object-cover" />
             )}
-            <div className="flex-1">
+            <div className="min-w-0 flex-1">
               <p className="font-medium">{item.name}</p>
               <p className="text-sm text-brand-text-muted">{formatPrice(item.price, i18n.language)}</p>
             </div>
 
-            <label className="flex items-center gap-2 text-sm">
-              {t('cart_quantity')}
-              <input
-                type="number"
-                min={1}
-                value={item.quantity}
-                onChange={(e) => {
-                  const qty = Number(e.target.value)
-                  if (qty >= 1) updateItem(item.id, qty)
-                }}
-                className="w-16 rounded border border-brand-border px-2 py-1"
-              />
-            </label>
+            {/* Its own flex-wrap group, not just more siblings in the row above - on a narrow
+                viewport this wraps as a unit onto its own line instead of the three items each
+                wrapping independently and landing on top of each other (see Sprint 6 mobile
+                Playwright run in docs/backlog.md, which is what caught this). */}
+            <div className="flex flex-wrap items-center gap-4">
+              <label className="flex items-center gap-2 text-sm">
+                {t('cart_quantity')}
+                <input
+                  type="number"
+                  min={1}
+                  value={item.quantity}
+                  onChange={(e) => {
+                    const qty = Number(e.target.value)
+                    if (qty >= 1) updateItem(item.id, qty)
+                  }}
+                  className="w-16 rounded border border-brand-border px-2 py-1"
+                />
+              </label>
 
-            <p className="w-24 text-right font-semibold">
-              {formatPrice(item.lineTotal, i18n.language)}
-            </p>
+              <p className="w-24 text-right font-semibold">
+                {formatPrice(item.lineTotal, i18n.language)}
+              </p>
 
-            <button
-              type="button"
-              onClick={() => removeItem(item.id)}
-              className="text-xs uppercase tracking-wide text-brand-text-muted underline hover:text-brand-sale"
-            >
-              {t('cart_remove')}
-            </button>
+              <button
+                type="button"
+                onClick={() => removeItem(item.id)}
+                className="text-xs uppercase tracking-wide text-brand-text-muted underline hover:text-brand-sale"
+              >
+                {t('cart_remove')}
+              </button>
+            </div>
           </div>
         ))}
       </div>

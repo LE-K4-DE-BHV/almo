@@ -1,15 +1,19 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/useAuth'
 import { useCart } from '../cart/useCart'
 import { ApiError } from '../api/client'
 
 /**
- * Functional placeholder, not the final design - real styling comes in Sprint 2 when
- * almofrontenddesign/login.html is ported over. This exists to prove the register/login/logout
- * flow works end to end against the real backend (see docs/backlog.md Sprint 1).
+ * Still unstyled (plain browser form controls, no Tailwind) - functional since Sprint 1 to prove
+ * the register/login/logout flow works end to end against the real backend, but the visual pass
+ * that the rest of the storefront got in Sprint 2 never happened here. Not part of Sprint 6's
+ * "close the remaining language gaps" task (see docs/backlog.md) - the strings are now translated,
+ * the layout is a separate, still-open piece of work.
  */
 export function LoginPage() {
+  const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -30,7 +34,7 @@ export function LoginPage() {
       await refreshCart()
       navigate('/account')
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Login failed')
+      setError(e instanceof ApiError ? e.message : t('login_error_generic'))
     } finally {
       setSubmitting(false)
     }
@@ -38,10 +42,10 @@ export function LoginPage() {
 
   return (
     <form onSubmit={handleSubmit}>
-      <h1>Login</h1>
+      <h1>{t('login_title')}</h1>
       {error && <p role="alert">{error}</p>}
       <label>
-        Email
+        {t('login_email')}
         <input
           type="email"
           value={email}
@@ -51,7 +55,7 @@ export function LoginPage() {
         />
       </label>
       <label>
-        Password
+        {t('login_password')}
         <input
           type="password"
           value={password}
@@ -61,13 +65,13 @@ export function LoginPage() {
         />
       </label>
       <button type="submit" disabled={submitting}>
-        {submitting ? 'Logging in...' : 'Login'}
+        {submitting ? t('login_submitting') : t('login_submit')}
       </button>
       <p>
-        <Link to="/forgot-password">Forgot password?</Link>
+        <Link to="/forgot-password">{t('login_forgot_password')}</Link>
       </p>
       <p>
-        No account? <Link to="/register">Register</Link>
+        {t('login_no_account')} <Link to="/register">{t('login_register_link')}</Link>
       </p>
     </form>
   )

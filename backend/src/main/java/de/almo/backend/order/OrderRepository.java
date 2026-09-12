@@ -18,4 +18,13 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
   @Query("SELECT o FROM Order o LEFT JOIN FETCH o.items WHERE o.id = :id AND o.userId = :userId")
   Optional<Order> findByIdAndUserId(@Param("id") Long id, @Param("userId") Long userId);
+
+  // Admin view (Sprint 5) - every order, not scoped to one user. Same JOIN FETCH reasoning as
+  // above: without it, mapping items to a response outside the transaction throws
+  // LazyInitializationException.
+  @Query("SELECT DISTINCT o FROM Order o LEFT JOIN FETCH o.items ORDER BY o.createdAt DESC")
+  List<Order> findAllWithItems();
+
+  @Query("SELECT o FROM Order o LEFT JOIN FETCH o.items WHERE o.id = :id")
+  Optional<Order> findByIdWithItems(@Param("id") Long id);
 }

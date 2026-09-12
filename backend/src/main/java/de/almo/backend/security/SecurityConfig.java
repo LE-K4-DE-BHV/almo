@@ -109,6 +109,10 @@ public class SecurityConfig {
                     // checks ownership, so permitAll here doesn't mean "anyone's cart".
                     .requestMatchers("/api/cart/**")
                     .permitAll()
+                    // Subscribing needs no account either - see Sprint 6 decision in
+                    // docs/backlog.md (no double opt-in, just a direct insert).
+                    .requestMatchers(HttpMethod.POST, "/api/newsletter")
+                    .permitAll()
                     .anyRequest()
                     .authenticated());
     return http.build();

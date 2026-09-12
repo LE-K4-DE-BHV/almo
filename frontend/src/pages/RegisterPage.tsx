@@ -1,10 +1,12 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/useAuth'
 import { useCart } from '../cart/useCart'
 import { ApiError } from '../api/client'
 
 export function RegisterPage() {
+  const { t } = useTranslation()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -24,7 +26,7 @@ export function RegisterPage() {
       await refreshCart() // picks up the guest cart the backend just merged in, see LoginPage
       navigate('/account')
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Registration failed')
+      setError(e instanceof ApiError ? e.message : t('register_error_generic'))
     } finally {
       setSubmitting(false)
     }
@@ -32,10 +34,10 @@ export function RegisterPage() {
 
   return (
     <form onSubmit={handleSubmit}>
-      <h1>Register</h1>
+      <h1>{t('register_title')}</h1>
       {error && <p role="alert">{error}</p>}
       <label>
-        Name
+        {t('register_name')}
         <input
           type="text"
           value={name}
@@ -45,7 +47,7 @@ export function RegisterPage() {
         />
       </label>
       <label>
-        Email
+        {t('register_email')}
         <input
           type="email"
           value={email}
@@ -55,7 +57,7 @@ export function RegisterPage() {
         />
       </label>
       <label>
-        Password
+        {t('register_password')}
         <input
           type="password"
           value={password}
@@ -66,10 +68,10 @@ export function RegisterPage() {
         />
       </label>
       <button type="submit" disabled={submitting}>
-        {submitting ? 'Creating account...' : 'Register'}
+        {submitting ? t('register_submitting') : t('register_submit')}
       </button>
       <p>
-        Already have an account? <Link to="/login">Login</Link>
+        {t('register_have_account')} <Link to="/login">{t('register_login_link')}</Link>
       </p>
     </form>
   )

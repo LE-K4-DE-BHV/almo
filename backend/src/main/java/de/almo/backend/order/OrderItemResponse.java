@@ -9,7 +9,7 @@ public record OrderItemResponse(
     BigDecimal priceAtOrder,
     BigDecimal lineTotal) {
 
-  static OrderItemResponse from(OrderItem item) {
+  public static OrderItemResponse from(OrderItem item) {
     return new OrderItemResponse(
         item.getProductId(),
         item.getProductName(),

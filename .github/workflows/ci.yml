@@ -1,13 +1,19 @@
 name: CI
 
-# Runs on every push to main and on every PR, so a broken build/format/lint is
-# caught before it lands. Only the lint/build stage exists so far (Sprint 0);
-# test/e2e/security-scan/deploy stages get added in later sprints per the spec's
-# CI/CD section and docs/backlog.md.
+# Runs on every push to main and on every PR, so a broken build/format/lint/test is caught before
+# it lands. Order roughly follows the spec's CI/CD section: lint -> unit tests -> e2e -> security
+# scan -> deploy (Sprint 6, see docs/backlog.md) - deploy stays prepared-but-inactive until the
+# VPS secrets below are added by hand.
 on:
   push:
     branches: [main]
   pull_request:
+
+# Pinned so `docker compose build` always names images almo-backend/almo-frontend regardless of
+# what directory name the runner checks the repo out into - the e2e and security-scan jobs below
+# reference those exact image names (Trivy scan, mainly).
+env:
+  COMPOSE_PROJECT_NAME: almo
 
 jobs:
   lint-frontend:
@@ -43,3 +49,152 @@ jobs:
       # contributors run `./mvnw spotless:apply` locally before pushing.
       - run: ./mvnw -B spotless:check
       - run: ./mvnw -B compile
+
+  test-frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run test
+
+  test-backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+      # Testcontainers (see AbstractIntegrationTest) needs a real Docker daemon - ubuntu-latest
+      # runners have one running already, no docker-in-docker setup needed here (unlike the local
+      # dev workflow's own Docker-based Maven runs, see docs/developer-guide.md's "Known gaps").
+      - run: ./mvnw -B test
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: [lint-frontend, lint-backend, test-frontend, test-backend]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+      # Same local-dev flow as docs/developer-guide.md's "Running the whole stack locally" -
+      # COOKIE_SECURE=false because the runner talks to the stack over plain HTTP, no nginx/TLS.
+      - run: cp infra/.env.example .env && echo "COOKIE_SECURE=false" >> .env
+      - run: docker compose build backend frontend
+      - run: docker compose up -d db redis backend frontend
+      - name: Wait for backend health
+        run: |
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8094/actuator/health && exit 0
+            sleep 2
+          done
+          echo "Backend did not become healthy in time" >&2
+          docker compose logs backend
+          exit 1
+      - working-directory: e2e
+        run: npm ci
+      - working-directory: e2e
+        run: npx playwright install --with-deps chromium firefox webkit
+      - working-directory: e2e
+        run: npm test
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 7
+      - if: always()
+        run: docker compose down -v
+
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: [lint-frontend, lint-backend]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - working-directory: frontend
+        run: npm ci
+      # Fails on high/critical advisories only - moderate/low findings are tracked but shouldn't
+      # block every PR (see `npm audit` severity levels).
+      - working-directory: frontend
+        run: npm audit --audit-level=high
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+      # NVD_API_KEY (see Sprint 6 decision in docs/backlog.md) makes the CVE feed download fast
+      # and reliable instead of hitting NVD's unauthenticated rate limit - register a free key at
+      # https://nvd.nist.gov/developers/request-an-api-key and add it as a repo secret to enable.
+      - working-directory: backend
+        run: >
+          ./mvnw -B org.owasp:dependency-check-maven:13.0.0:check
+          -DnvdApiKey=${{ secrets.NVD_API_KEY }}
+          -DfailBuildOnCVSS=8
+          -Dformats=HTML,JSON
+        continue-on-error: ${{ secrets.NVD_API_KEY == '' }}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-report
+          path: backend/target/dependency-check-report.*
+          retention-days: 7
+
+      - run: docker compose build backend frontend
+      - name: Scan backend image with Trivy
+        uses: aquasecurity/trivy-action@0.36.0
+        with:
+          image-ref: almo-backend:latest
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+      - name: Scan frontend image with Trivy
+        uses: aquasecurity/trivy-action@0.36.0
+        with:
+          image-ref: almo-frontend:latest
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+
+  # Deploys to the shared VPS over SSH on every push to main once everything else is green.
+  # Deliberately inactive (`if: false`) until three repo secrets exist - VPS_HOST, VPS_USER,
+  # VPS_SSH_KEY (a private key whose public half is authorized on the VPS for that user). Flip
+  # the `if:` below to the commented-out condition once they're added (see Sprint 6 decision in
+  # docs/backlog.md: activating this touches the shared VPS directly, so it's a deliberate,
+  # separate step from writing the job itself).
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [e2e, security-scan]
+    if: false # github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v7
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /opt/almo
+            git pull
+            docker compose build backend frontend
+            docker compose up -d

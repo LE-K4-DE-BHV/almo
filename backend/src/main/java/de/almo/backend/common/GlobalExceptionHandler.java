@@ -5,9 +5,15 @@ import de.almo.backend.auth.EmailAlreadyRegisteredException;
 import de.almo.backend.auth.InvalidResetTokenException;
 import de.almo.backend.cart.CartItemNotFoundException;
 import de.almo.backend.catalog.ProductNotFoundException;
+import de.almo.backend.catalog.admin.CategoryInUseException;
+import de.almo.backend.catalog.admin.CategoryKeyTakenException;
+import de.almo.backend.catalog.admin.CategoryNotFoundException;
+import de.almo.backend.catalog.admin.ProductHasOrdersException;
+import de.almo.backend.image.ImageUploadNotConfiguredException;
 import de.almo.backend.order.EmptyCartException;
 import de.almo.backend.order.InsufficientStockException;
 import de.almo.backend.order.OrderNotFoundException;
+import de.almo.backend.review.ReviewNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -61,6 +67,37 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(AccountHasOrdersException.class)
   public ResponseEntity<ApiError> handleAccountHasOrders(AccountHasOrdersException e) {
     return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiError(e.getMessage()));
+  }
+
+  @ExceptionHandler(CategoryNotFoundException.class)
+  public ResponseEntity<ApiError> handleCategoryNotFound(CategoryNotFoundException e) {
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiError(e.getMessage()));
+  }
+
+  @ExceptionHandler(CategoryKeyTakenException.class)
+  public ResponseEntity<ApiError> handleCategoryKeyTaken(CategoryKeyTakenException e) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiError(e.getMessage()));
+  }
+
+  @ExceptionHandler(CategoryInUseException.class)
+  public ResponseEntity<ApiError> handleCategoryInUse(CategoryInUseException e) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiError(e.getMessage()));
+  }
+
+  @ExceptionHandler(ProductHasOrdersException.class)
+  public ResponseEntity<ApiError> handleProductHasOrders(ProductHasOrdersException e) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiError(e.getMessage()));
+  }
+
+  @ExceptionHandler(ImageUploadNotConfiguredException.class)
+  public ResponseEntity<ApiError> handleImageUploadNotConfigured(
+      ImageUploadNotConfiguredException e) {
+    return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(new ApiError(e.getMessage()));
+  }
+
+  @ExceptionHandler(ReviewNotFoundException.class)
+  public ResponseEntity<ApiError> handleReviewNotFound(ReviewNotFoundException e) {
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiError(e.getMessage()));
   }
 
   @ExceptionHandler(BadCredentialsException.class)

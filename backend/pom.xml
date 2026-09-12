@@ -28,7 +28,22 @@
 	</scm>
 	<properties>
 		<java.version>25</java.version>
+		<!-- Not covered by spring-boot-starter-parent's own dependency management - pinned here
+		     directly. Check https://github.com/testcontainers/testcontainers-java/releases before
+		     bumping. -->
+		<testcontainers.version>1.21.3</testcontainers.version>
 	</properties>
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.testcontainers</groupId>
+				<artifactId>testcontainers-bom</artifactId>
+				<version>${testcontainers.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 	<dependencies>
 		<!-- Health/readiness endpoints; also what docker-compose and the deploy
 		     script poll to know the container is actually up, not just started. -->
@@ -102,6 +117,15 @@
 			<artifactId>openpdf</artifactId>
 			<version>3.0.5</version>
 		</dependency>
+		<!-- Product image upload (Sprint 5). cloudinary-http5 is the current SDK line (Apache
+		     HttpClient 5) - cloudinary-http45 is the older, now largely superseded HttpClient-4.4
+		     line, still updated but capped around 1.39.0; verified via Maven Central metadata, not
+		     the (slightly stale) README, before picking this artifact. -->
+		<dependency>
+			<groupId>com.cloudinary</groupId>
+			<artifactId>cloudinary-http5</artifactId>
+			<version>2.4.0</version>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator-test</artifactId>
@@ -140,6 +164,25 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webmvc-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<!-- Testcontainers: real Postgres + Redis in CI/local test runs instead of mocking JdbcClient/
+		     JPA away - see Sprint 6 decision in docs/backlog.md. spring-boot-testcontainers wires up
+		     @ServiceConnection so container connection details flow into Spring's datasource/redis
+		     config automatically, no manual @DynamicPropertySource needed. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-testcontainers</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>postgresql</artifactId>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
