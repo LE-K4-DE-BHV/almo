@@ -9,7 +9,7 @@ function formatPrice(value: number, lang: string) {
 
 export function CartPage() {
   const { t, i18n } = useTranslation()
-  const { cart, updateItem, removeItem } = useCart()
+  const { cart, loading, updateItem, removeItem } = useCart()
   const { user } = useAuth()
   const navigate = useNavigate()
 
@@ -19,6 +19,13 @@ export function CartPage() {
     // than letting them hit checkout and bounce off a 401.
     navigate(user ? '/checkout' : '/login')
   }
+
+  // `cart` starts as EMPTY_CART (see CartProvider) until the mount-time GET /api/cart resolves -
+  // every navigation to this page via page.goto()/a fresh document load (not just React Router's
+  // client-side routing) remounts CartProvider from scratch. Without this guard, a real,
+  // non-empty cart would flash the "empty" view for as long as that fetch takes before correcting
+  // itself, which is only a cosmetic flicker most of the time but is wrong regardless of duration.
+  if (loading) return null
 
   if (cart.items.length === 0) {
     return (
