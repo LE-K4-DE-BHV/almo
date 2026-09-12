@@ -19,6 +19,7 @@ import { AdminProductFormPage } from './pages/admin/AdminProductFormPage'
 import { AdminCategoriesPage } from './pages/admin/AdminCategoriesPage'
 import { AdminOrdersPage } from './pages/admin/AdminOrdersPage'
 import { AdminReviewsPage } from './pages/admin/AdminReviewsPage'
+import { AdminProfilePage } from './pages/admin/AdminProfilePage'
 import { RequireAuth } from './auth/RequireAuth'
 import { RequireAdmin } from './auth/RequireAdmin'
 
@@ -77,6 +78,7 @@ export function AppRouter() {
         <Route path="categories" element={<AdminCategoriesPage />} />
         <Route path="orders" element={<AdminOrdersPage />} />
         <Route path="reviews" element={<AdminReviewsPage />} />
+        <Route path="profile" element={<AdminProfilePage />} />
       </Route>
     </Routes>
   )

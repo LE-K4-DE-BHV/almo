@@ -2,6 +2,7 @@ package de.almo.backend.auth;
 
 import de.almo.backend.auth.dto.LoginRequest;
 import de.almo.backend.auth.dto.RegisterRequest;
+import de.almo.backend.auth.dto.UpdateProfileRequest;
 import de.almo.backend.mail.MailService;
 import de.almo.backend.user.Role;
 import de.almo.backend.user.User;
@@ -18,6 +19,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Service;
@@ -38,6 +41,7 @@ public class AuthService {
   private final PasswordEncoder passwordEncoder;
   private final AuthenticationManager authenticationManager;
   private final SecurityContextRepository securityContextRepository;
+  private final UserDetailsService userDetailsService;
   private final MailService mailService;
   private final AuthProperties authProperties;
 
@@ -47,6 +51,7 @@ public class AuthService {
       PasswordEncoder passwordEncoder,
       AuthenticationManager authenticationManager,
       SecurityContextRepository securityContextRepository,
+      UserDetailsService userDetailsService,
       MailService mailService,
       AuthProperties authProperties) {
     this.userRepository = userRepository;
@@ -54,6 +59,7 @@ public class AuthService {
     this.passwordEncoder = passwordEncoder;
     this.authenticationManager = authenticationManager;
     this.securityContextRepository = securityContextRepository;
+    this.userDetailsService = userDetailsService;
     this.mailService = mailService;
     this.authProperties = authProperties;
   }
@@ -115,6 +121,49 @@ public class AuthService {
     } catch (DataIntegrityViolationException e) {
       throw new AccountHasOrdersException();
     }
+  }
+
+  /**
+   * Backs {@code PATCH /api/auth/me} - shared between customer and admin accounts since both live
+   * in the same {@code users} table and this sits under the always-permitAll {@code /api/auth/**}
+   * matcher (see SecurityConfig), same as {@link #deleteAccount}.
+   */
+  @Transactional
+  public User updateProfile(
+      String currentEmail,
+      UpdateProfileRequest request,
+      HttpServletRequest httpRequest,
+      HttpServletResponse httpResponse) {
+    User user = findByEmail(currentEmail);
+    String newEmail = request.email().trim().toLowerCase();
+    boolean emailChanged = !newEmail.equals(user.getEmail());
+    if (emailChanged && userRepository.existsByEmail(newEmail)) {
+      throw new EmailAlreadyRegisteredException();
+    }
+    user.setEmail(newEmail);
+    user.setName(request.name().trim());
+    if (request.newPassword() != null && !request.newPassword().isBlank()) {
+      user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+    }
+    User saved = userRepository.save(user);
+
+    if (emailChanged) {
+      // Authentication.getName() (== the UserDetails username) is still the old email at this
+      // point - every later request on this same session would look the user up by an email that
+      // no longer exists (see findByEmail's IllegalStateException) unless the SecurityContext is
+      // rewritten here with a fresh UserDetails for the new email. No session-id rotation needed
+      // (unlike persistSession) since this isn't a privilege change, just a changed username.
+      UserDetails updatedDetails = userDetailsService.loadUserByUsername(newEmail);
+      Authentication refreshed =
+          UsernamePasswordAuthenticationToken.authenticated(
+              updatedDetails, null, updatedDetails.getAuthorities());
+      SecurityContext context = SecurityContextHolder.createEmptyContext();
+      context.setAuthentication(refreshed);
+      SecurityContextHolder.setContext(context);
+      securityContextRepository.saveContext(context, httpRequest, httpResponse);
+    }
+
+    return saved;
   }
 
   public User findByEmail(String email) {

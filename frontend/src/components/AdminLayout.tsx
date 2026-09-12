@@ -39,6 +39,9 @@ export function AdminLayout() {
               <NavLink to="/admin/reviews" className={navLinkClass}>
                 Reviews
               </NavLink>
+              <NavLink to="/admin/profile" className={navLinkClass}>
+                Profile
+              </NavLink>
             </nav>
           </div>
           <div className="flex items-center gap-3 text-sm">

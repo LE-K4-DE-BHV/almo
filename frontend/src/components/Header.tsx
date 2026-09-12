@@ -29,7 +29,11 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-10 border-b border-brand-border bg-brand-surface">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-6 py-4">
+      {/* relative here (not on the cart button's own small wrapper below) so the mini-cart flyout's
+          `right-0` anchors to the full header width - on narrow viewports this row wraps onto its
+          own line starting at the left padding, so anchoring to the button's tiny wrapper instead
+          put the flyout mostly off-screen to the left (~73% of its width past the viewport edge). */}
+      <div className="relative mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-6 py-4">
         <Link to="/" className="text-xl font-semibold tracking-wide">
           {t('app_title')}
         </Link>
@@ -69,7 +73,7 @@ export function Header() {
 
           {/* Mini-cart flyout: click toggles, matches the spec's "Mini-Warenkorb-Flyout ohne
               Seitenwechsel" - a hover-only flyout wouldn't work on touch devices. */}
-          <div className="relative">
+          <div>
             <button
               type="button"
               onClick={() => setCartOpen((open) => !open)}

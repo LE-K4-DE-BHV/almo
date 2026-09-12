@@ -4,6 +4,7 @@ import de.almo.backend.auth.dto.LoginRequest;
 import de.almo.backend.auth.dto.PasswordResetConfirmDto;
 import de.almo.backend.auth.dto.PasswordResetRequestDto;
 import de.almo.backend.auth.dto.RegisterRequest;
+import de.almo.backend.auth.dto.UpdateProfileRequest;
 import de.almo.backend.auth.dto.UserResponse;
 import de.almo.backend.cart.CartService;
 import de.almo.backend.user.User;
@@ -16,6 +17,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -78,6 +80,18 @@ public class AuthController {
       return ResponseEntity.status(401).build();
     }
     return ResponseEntity.ok(UserResponse.from(authService.findByEmail(authentication.getName())));
+  }
+
+  /** Same-table-for-both-roles shape as {@link #deleteAccount} - see AuthService.updateProfile. */
+  @PatchMapping("/me")
+  public UserResponse updateProfile(
+      @Valid @RequestBody UpdateProfileRequest request,
+      HttpServletRequest httpRequest,
+      HttpServletResponse httpResponse,
+      Authentication authentication) {
+    User user =
+        authService.updateProfile(authentication.getName(), request, httpRequest, httpResponse);
+    return UserResponse.from(user);
   }
 
   @DeleteMapping("/me")

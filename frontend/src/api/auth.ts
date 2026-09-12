@@ -34,6 +34,16 @@ export function logout() {
   return apiFetch<void>('/api/auth/logout', { method: 'POST' })
 }
 
+export function updateProfile(email: string, name: string, newPassword: string) {
+  return apiFetch<UserResponse>('/api/auth/me', {
+    method: 'PATCH',
+    // Empty string, not omitted - the backend treats blank/null the same ("keep current
+    // password"), and JSON.stringify would otherwise drop an omitted key inconsistently depending
+    // on how the body object is built.
+    body: { email, name, newPassword: newPassword || null },
+  })
+}
+
 export function deleteAccount() {
   return apiFetch<void>('/api/auth/me', { method: 'DELETE' })
 }

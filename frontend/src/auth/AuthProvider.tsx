@@ -34,13 +34,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(await authApi.register(email, password, name))
   }
 
+  async function updateProfile(email: string, name: string, newPassword: string) {
+    setUser(await authApi.updateProfile(email, name, newPassword))
+  }
+
   async function logout() {
     await authApi.logout()
     setUser(null)
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, adminLogin, register, logout }}>
+    <AuthContext.Provider
+      value={{ user, loading, login, adminLogin, register, updateProfile, logout }}
+    >
       {children}
     </AuthContext.Provider>
   )

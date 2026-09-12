@@ -274,6 +274,24 @@ Noch offen, braucht eigene Recherche vor dem Start (KI-Anbieter, Kosten pro Aufr
 - Kandidat: Produktbeschreibungen/SEO-Texte per KI vorschlagen lassen beim Anlegen eines Produkts
 - Weitere Kandidaten aus der Shopify-Recherche (Preisstrategie-Hinweise, Lagerbestand-Warnungen) möglich, aber noch nicht priorisiert
 
+## Admin-Profil bearbeiten (2026-09-12)
+
+Vor dem Start von Sprint 7 noch schnell umgesetzt: Admins konnten Name/E-Mail/Passwort bisher nirgends selbst ändern.
+
+- **`PATCH /api/auth/me`** (neu) - liegt bewusst unter dem schon offenen `/api/auth/**`-Pfad (permitAll, Handler prüft `Authentication` selbst), genau wie `DELETE /api/auth/me`. Funktioniert dadurch identisch für Kunden- und Admin-Sessions, ohne `SecurityConfig` anzufassen - beide Rollen leben in derselben `users`-Tabelle. Nimmt Name, E-Mail und optional ein neues Passwort (leer = unverändert). Doppelte E-Mail → 409 (`EmailAlreadyRegisteredException`, gleiche Exception wie bei der Registrierung).
+- **Technische Falle gefixt, bevor sie live aufgefallen wäre**: Ändert sich die E-Mail, zeigt `Authentication.getName()` (= Session-Principal) danach noch auf die alte Adresse - jeder folgende Request hätte den User unter der alten E-Mail gesucht und wäre mit einer `IllegalStateException` gecrasht. `AuthService.updateProfile` schreibt den `SecurityContext` nach einer E-Mail-Änderung deshalb sofort mit einem frischen `UserDetails` neu (ohne Session-Rotation, da kein Rechte-Wechsel) - Session bleibt gültig, kein erzwungenes Neu-Einloggen.
+- Frontend: neue `AdminProfilePage.tsx` unter `/admin/profile`, eigener Nav-Punkt in `AdminLayout`. `useAuth()` bekommt eine `updateProfile()`-Funktion, die den lokalen User-State nach dem Speichern aktualisiert.
+- Durchgetestet gegen einen isolierten Test-Stack: Name/E-Mail ändern (Session bleibt gültig), Passwort ändern (Login mit altem Passwort danach 401, mit neuem 200), doppelte E-Mail (409), derselbe Endpoint über eine Admin-Session (Admin-Bereich nach E-Mail-Änderung weiterhin erreichbar).
+
+## Mobile-Responsive-Audit (2026-09-12)
+
+Auslöser: "die meisten werden das auf dem Smartphone nutzen, aktuell ist es da zu komisch". Systematisch per Playwright-Screenshots (iPhone-13- und iPhone-SE-Viewports) durch Home/Shop/Produktdetail/Login/Register/Cart/Account/Checkout durchgegangen. Die meisten Seiten waren schon in Ordnung; zwei echte Bugs gefunden und gefixt:
+
+- **Mini-Warenkorb-Flyout praktisch unsichtbar auf dem Handy.** `Header.tsx`s Flyout war `absolute right-0` relativ zu einem `<div className="relative">`, das nur den Warenkorb-Button selbst umschließt. Der Header wraps auf schmalen Viewports auf mehrere Zeilen (Logo+Nav, Suche, Icons je eigene Zeile), sodass dieser kleine Button-Wrapper nahe am linken Rand landet - der 288px breite Flyout hing dadurch zu ~73 % seiner Breite links außerhalb des Viewports (gemessen: `x: -212` bei 390px Viewportbreite). Gefixt, indem `relative` stattdessen auf den äußeren, volle-Breite-Header-Container gesetzt wird - der Flyout hängt sein `right-0` jetzt an den echten rechten Rand des Headers, nicht an den kleinen Button. Nach dem Fix: `x: 102` bis `390` bei 390px Viewport, vollständig sichtbar.
+- **Sticky "Add to Cart"-Leiste auf der Produktseite überdeckte Titel/Preis beim ersten Laden.** `ProductPage.tsx`s mobile Sticky-Leiste (`fixed inset-x-0 bottom-0 ... sm:hidden`) ist laut Spec bewusst immer sichtbar, damit man auch nach unten zu den Reviews gescrollt noch kaufen kann - auf kleineren Handys (getestet: iPhone 13 und iPhone SE) füllt aber schon das quadratische Produktbild plus Header fast die komplette Viewporthöhe, sodass der Produkttitel direkt in den von der Leiste belegten unteren Bereich hineinragte und teilweise verdeckt wurde, noch bevor überhaupt gescrollt wurde. Gefixt mit einem `IntersectionObserver` auf dem `<h1>`: die Sticky-Leiste wird nur noch angezeigt, sobald der echte Titel aus dem sichtbaren Bereich gescrollt ist, nicht mehr durchgehend. Mit Screenshots vor/nach scroll gegengeprüft (Titel beim Laden vollständig lesbar, Leiste erscheint zuverlässig, sobald man weiter scrollt).
+
+Verifiziert per Playwright-Screenshots in einem isolierten Test-Stack (iPhone 13 + iPhone SE Viewports), danach Frontend-Lint/Build/Vitest-Suite (8/8) gegengeprüft, Produktion unberührt.
+
 ## Bewusst zurückgestellt (nicht in obigen Sprints)
 
 Siehe Spec-Abschnitt "Bewusst außerhalb des MVP-Scopes": Rechtsseiten (Impressum/Datenschutz/AGB/Widerruf), Cookie-Consent, DSGVO-Datenexport, MwSt.-Hinweis, Object-Storage-Alternativen zu Cloudinary, echtes Payment (Stripe o.ä.). Kommen als eigene Sprints, sobald ein Gewerbe existiert bzw. der Shop live geht.

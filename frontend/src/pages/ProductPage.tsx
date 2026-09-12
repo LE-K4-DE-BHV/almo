@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useParams, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import {
@@ -39,6 +39,8 @@ export function ProductPage() {
   const [reviewSubmitting, setReviewSubmitting] = useState(false)
   const [reviewError, setReviewError] = useState<string | null>(null)
   const [reviewSubmitted, setReviewSubmitted] = useState(false)
+  const titleRef = useRef<HTMLHeadingElement>(null)
+  const [titleVisible, setTitleVisible] = useState(true)
 
   useEffect(() => {
     setProduct(null)
@@ -62,6 +64,19 @@ export function ProductPage() {
     // loaded" to "loaded" should re-trigger this, not every new object identity fetchProduct
     // returns - otherwise this would re-record the view and re-fetch "recently viewed" needlessly.
   }, [productId, i18n.language, productLoaded])
+
+  useEffect(() => {
+    const el = titleRef.current
+    if (!el) return
+    // Mobile sticky bar (below) must stay hidden while the real title is still on screen -
+    // otherwise the fixed bar covers it right on page load, since a square product photo plus
+    // header can already fill most of a phone's viewport height. See the mobile-audit bug in
+    // docs/backlog.md. Anchored to the title (not the inline buttons further down) because the
+    // title, not the buttons, is what the bar was actually covering.
+    const observer = new IntersectionObserver(([entry]) => setTitleVisible(entry.isIntersecting))
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [productLoaded])
 
   if (!product) return null
 
@@ -146,7 +161,9 @@ export function ProductPage() {
           <span className="text-xs uppercase tracking-wide text-brand-text-muted">
             {product.categoryName}
           </span>
-          <h1 className="mt-1 text-2xl font-semibold">{product.name}</h1>
+          <h1 ref={titleRef} className="mt-1 text-2xl font-semibold">
+            {product.name}
+          </h1>
 
           {product.reviewCount > 0 && product.avgRating != null && (
             <p className="mt-1 text-sm text-brand-text-muted">
@@ -301,20 +318,24 @@ export function ProductPage() {
         </section>
       )}
 
-      {/* Sticky add-to-cart bar per spec: stays visible even when scrolled down to reviews. */}
-      <div className="fixed inset-x-0 bottom-0 border-t border-brand-border bg-brand-surface p-3 sm:hidden">
-        <div className="mx-auto flex max-w-5xl items-center gap-3 px-3">
-          <span className="flex-1 truncate text-sm font-medium">{product.name}</span>
-          <button
-            type="button"
-            onClick={handleAddToCart}
-            disabled={adding || product.status === 'out_of_stock'}
-            className="rounded bg-brand-text px-6 py-2 text-xs uppercase tracking-wide text-white disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {t('add_to_cart')}
-          </button>
+      {/* Sticky add-to-cart bar per spec: stays visible even when scrolled down to reviews. Hidden
+          while the real inline add-to-cart row (above) is still on screen - otherwise it would
+          cover the title/price/description right on page load, see the IntersectionObserver above. */}
+      {!titleVisible && (
+        <div className="fixed inset-x-0 bottom-0 border-t border-brand-border bg-brand-surface p-3 sm:hidden">
+          <div className="mx-auto flex max-w-5xl items-center gap-3 px-3">
+            <span className="flex-1 truncate text-sm font-medium">{product.name}</span>
+            <button
+              type="button"
+              onClick={handleAddToCart}
+              disabled={adding || product.status === 'out_of_stock'}
+              className="rounded bg-brand-text px-6 py-2 text-xs uppercase tracking-wide text-white disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {t('add_to_cart')}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
