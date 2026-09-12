@@ -28,6 +28,12 @@
 	</scm>
 	<properties>
 		<java.version>25</java.version>
+		<!-- Overrides spring-boot-dependencies 4.1.1's own managed tomcat.version (11.0.24), which
+		     Trivy flags with 3 CRITICAL CVEs (2026-65182, 2026-65905, 2026-68525) fixed in 11.0.25 -
+		     Spring Boot itself hasn't picked up the patched Tomcat yet as of 4.1.1. Check
+		     https://mvnrepository.com/artifact/org.apache.tomcat.embed/tomcat-embed-core for a newer
+		     fix once Spring Boot's own dependency management catches up, then this override can go. -->
+		<tomcat.version>11.0.25</tomcat.version>
 		<!-- Not covered by spring-boot-starter-parent's own dependency management - pinned here
 		     directly. Check https://github.com/testcontainers/testcontainers-java/releases before
 		     bumping. -->
@@ -103,11 +109,13 @@
 		     Argon2 algorithm - it's not bundled in spring-security-crypto itself, so without this
 		     the app throws NoClassDefFoundError the first time a password is hashed. Version isn't
 		     Spring-Boot-managed (not in its BOM), pinned here directly - check
-		     https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk18on before bumping. -->
+		     https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk18on before bumping.
+		     1.86 (latest per Maven Central metadata, checked 2026-09-12) - 1.80 was flagged by
+		     Trivy for CVE-2025-14813 (GOSTCTR block-count overflow), fixed in 1.80.2+. -->
 		<dependency>
 			<groupId>org.bouncycastle</groupId>
 			<artifactId>bcprov-jdk18on</artifactId>
-			<version>1.80</version>
+			<version>1.86</version>
 		</dependency>
 		<!-- Order-confirmation PDF (Sprint 4). LGPL/MPL-dual-licensed, package renamed to
 		     org.openpdf as of 3.0.0 (was com.lowagie before) - check

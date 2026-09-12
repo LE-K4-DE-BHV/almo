@@ -1,0 +1,15 @@
+# Canonical Pebble (Go-Service-Supervisor, Teil des Chiselled-Ubuntu-Basisimages
+# eclipse-temurin:25-jre/-jdk, siehe backend/Dockerfile) - statisch kompiliertes
+# Go-Binary, kein Teil unseres Anwendungscodes, kein Netzwerkzugriff von außen
+# auf pebble selbst. Fix liegt bei Canonical/Adoptium (neues Basisimage), nicht
+# bei uns - das Dockerfile pinnt keine feste Digest, ein Rebuild zieht ein
+# gepatchtes Image automatisch, sobald es erscheint.
+# Erneut prüfen: 2026-12-01, ob das Image inzwischen gepatcht ist.
+CVE-2026-33818 exp:2026-12-01
+CVE-2026-39821 exp:2026-12-01
+CVE-2026-46600 exp:2026-12-01
+CVE-2026-56853 exp:2026-12-01
+CVE-2026-56858 exp:2026-12-01
+CVE-2026-56859 exp:2026-12-01
+CVE-2026-56860 exp:2026-12-01
+CVE-2026-56862 exp:2026-12-01

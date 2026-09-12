@@ -144,6 +144,19 @@ jobs:
           distribution: temurin
           java-version: "25"
           cache: maven
+      # Separate from the pom.xml-keyed `cache: maven` above: the NVD CVE database (default
+      # location, see dependency-check-maven docs) has nothing to do with pom.xml and would never
+      # get cached by that key. Without this, every single run re-downloads the full ~390k-record
+      # NVD dataset from scratch (20-40+ minutes) instead of pulling a small incremental update.
+      # Primary key includes run_id so it's always a fresh entry (cache always gets re-saved with
+      # the just-updated data at the end of the job, standard "ever-growing cache" pattern) -
+      # restore-keys' prefix match is what actually pulls in the most recent run's data.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/owasp/dependency-check-data
+          key: nvd-data-${{ github.run_id }}
+          restore-keys: |
+            nvd-data-
       # NVD_API_KEY (see Sprint 6 decision in docs/backlog.md) makes the CVE feed download fast
       # and reliable instead of hitting NVD's unauthenticated rate limit - register a free key at
       # https://nvd.nist.gov/developers/request-an-api-key (must be confirmed via the email link
