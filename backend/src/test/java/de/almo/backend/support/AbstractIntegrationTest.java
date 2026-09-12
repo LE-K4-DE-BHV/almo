@@ -7,8 +7,6 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 /**
@@ -20,21 +18,34 @@ import org.testcontainers.utility.DockerImageName;
  * (random emails/keys) rather than relying on an empty schema, since the container - and whatever a
  * previous test class left in it - outlives any single test class.
  *
+ * <p><b>Deliberately not {@code @Testcontainers}/{@code @Container}:</b> that JUnit5 extension
+ * manages a container's lifecycle per test class - it stops an {@code @Container}-annotated field
+ * (static or not) in {@code afterAll()} and restarts it (fresh container, fresh mapped port) for
+ * the next class. Combined with Spring's test-context caching (which reuses the ApplicationContext,
+ * DataSource included, across subclasses since they all share this exact configuration), that
+ * silently broke every test class after the first: Spring kept talking to the first class's
+ * already-stopped container on its now-dead port instead of the freshly started one. This is
+ * Testcontainers' documented "singleton containers" pattern instead - a plain static field, started
+ * once in a static initializer, never touched by an extension.
+ *
  * <p>Flyway runs its full migration set (including the dev-only seed data from V4, see that
  * migration's own comment) against the container on context startup, exactly like a real
  * docker-compose run - nothing here recreates the schema by hand.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
-@Testcontainers
 public abstract class AbstractIntegrationTest {
 
-  @Container @ServiceConnection
+  @ServiceConnection
   static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:17-alpine");
 
-  @Container
   static final GenericContainer<?> REDIS =
       new GenericContainer<>(DockerImageName.parse("redis:7-alpine")).withExposedPorts(6379);
+
+  static {
+    POSTGRES.start();
+    REDIS.start();
+  }
 
   @DynamicPropertySource
   static void redisProperties(DynamicPropertyRegistry registry) {
