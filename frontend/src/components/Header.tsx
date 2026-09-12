@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/useAuth'
 import { useCart } from '../cart/useCart'
 import { useWishlist } from '../wishlist/useWishlist'
+import { HeartIcon, BagIcon } from './icons'
 
 const LANGUAGES = ['de', 'en', 'fr'] as const
 
@@ -55,10 +56,10 @@ export function Header() {
         <div className="flex items-center gap-3 text-sm">
           <Link
             to="/wishlist"
-            className="relative hover:text-brand-accent"
+            className="relative flex items-center hover:text-brand-accent"
             title={t('nav_wishlist')}
           >
-            ♡
+            <HeartIcon />
             {wishlistItems.length > 0 && (
               <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-accent px-1 text-[10px] text-white">
                 {wishlistItems.length}
@@ -72,10 +73,10 @@ export function Header() {
             <button
               type="button"
               onClick={() => setCartOpen((open) => !open)}
-              className="relative hover:text-brand-accent"
+              className="relative flex items-center hover:text-brand-accent"
               title={t('nav_cart')}
             >
-              🛍
+              <BagIcon />
               {cart.totalQuantity > 0 && (
                 <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-accent px-1 text-[10px] text-white">
                   {cart.totalQuantity}

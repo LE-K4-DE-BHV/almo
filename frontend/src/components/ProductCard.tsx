@@ -5,6 +5,7 @@ import type { Product } from '../api/catalog'
 import { useAuth } from '../auth/useAuth'
 import { useCart } from '../cart/useCart'
 import { useWishlist } from '../wishlist/useWishlist'
+import { HeartIcon, BagIcon } from './icons'
 
 const STOCK_STYLES: Record<Product['status'], string> = {
   in_stock: 'text-brand-text-muted',
@@ -67,7 +68,7 @@ export function ProductCard({ product }: { product: Product }) {
           title={t('add_to_wishlist')}
           className={`absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-brand-surface shadow ${wishlisted ? 'text-brand-sale' : 'text-brand-text-muted'}`}
         >
-          {wishlisted ? '♥' : '♡'}
+          <HeartIcon filled={wishlisted} className="h-4 w-4" />
         </button>
         <button
           type="button"
@@ -76,7 +77,7 @@ export function ProductCard({ product }: { product: Product }) {
           title={t('add_to_cart')}
           className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-brand-surface text-brand-text-muted shadow disabled:cursor-not-allowed disabled:opacity-50"
         >
-          🛍
+          <BagIcon className="h-4 w-4" />
         </button>
       </Link>
 

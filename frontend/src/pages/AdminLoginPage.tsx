@@ -32,32 +32,47 @@ export function AdminLoginPage() {
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h1>Admin login</h1>
-      {error && <p role="alert">{error}</p>}
-      <label>
-        Email
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          autoComplete="email"
-        />
-      </label>
-      <label>
-        Password
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          autoComplete="current-password"
-        />
-      </label>
-      <button type="submit" disabled={submitting}>
-        {submitting ? 'Logging in...' : 'Login'}
-      </button>
-    </form>
+    <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-6">
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-col gap-4 rounded border border-brand-border bg-brand-surface p-6"
+      >
+        <h1 className="text-2xl font-semibold">Admin login</h1>
+        {error && (
+          <p role="alert" className="text-sm text-brand-sale">
+            {error}
+          </p>
+        )}
+        <label className="flex flex-col gap-1 text-sm">
+          Email
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            autoComplete="email"
+            className="rounded border border-brand-border px-3 py-2"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-sm">
+          Password
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            autoComplete="current-password"
+            className="rounded border border-brand-border px-3 py-2"
+          />
+        </label>
+        <button
+          type="submit"
+          disabled={submitting}
+          className="mt-2 rounded bg-brand-text px-6 py-3 text-xs uppercase tracking-wide text-white hover:bg-black disabled:opacity-50"
+        >
+          {submitting ? 'Logging in...' : 'Login'}
+        </button>
+      </form>
+    </div>
   )
 }

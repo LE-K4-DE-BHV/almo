@@ -13,6 +13,8 @@ import de.almo.backend.image.ImageUploadNotConfiguredException;
 import de.almo.backend.order.EmptyCartException;
 import de.almo.backend.order.InsufficientStockException;
 import de.almo.backend.order.OrderNotFoundException;
+import de.almo.backend.review.AlreadyReviewedException;
+import de.almo.backend.review.NotPurchasedException;
 import de.almo.backend.review.ReviewNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -98,6 +100,16 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(ReviewNotFoundException.class)
   public ResponseEntity<ApiError> handleReviewNotFound(ReviewNotFoundException e) {
     return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiError(e.getMessage()));
+  }
+
+  @ExceptionHandler(NotPurchasedException.class)
+  public ResponseEntity<ApiError> handleNotPurchased(NotPurchasedException e) {
+    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiError(e.getMessage()));
+  }
+
+  @ExceptionHandler(AlreadyReviewedException.class)
+  public ResponseEntity<ApiError> handleAlreadyReviewed(AlreadyReviewedException e) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiError(e.getMessage()));
   }
 
   @ExceptionHandler(BadCredentialsException.class)

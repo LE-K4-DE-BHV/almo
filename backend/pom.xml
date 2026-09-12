@@ -124,6 +124,20 @@
 			<groupId>com.github.librepdf</groupId>
 			<artifactId>openpdf</artifactId>
 			<version>3.0.5</version>
+			<!-- brotli4j (an optional PDF-stream-compression feature we never use - our PDFs are
+			     simple text/tables, see the Sprint 4 decision above) ships a native library that
+			     throws UnsatisfiedLinkError on this stack (JDK 25) the moment anything touches it.
+			     It doesn't stay inert on the classpath either: Apache HttpClient5 (pulled in by the
+			     Cloudinary SDK below) auto-detects brotli4j's decoder class and opportunistically
+			     enables Brotli response decoding, which is what actually triggers the crash - on
+			     Cloudinary upload responses, not on PDF generation. Excluded outright since nothing
+			     in this app needs Brotli anywhere. -->
+			<exclusions>
+				<exclusion>
+					<groupId>com.aayushatharva.brotli4j</groupId>
+					<artifactId>brotli4j</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<!-- Product image upload (Sprint 5). cloudinary-http5 is the current SDK line (Apache
 		     HttpClient 5) - cloudinary-http45 is the older, now largely superseded HttpClient-4.4

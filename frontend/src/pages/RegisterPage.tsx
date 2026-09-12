@@ -33,46 +33,65 @@ export function RegisterPage() {
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h1>{t('register_title')}</h1>
-      {error && <p role="alert">{error}</p>}
-      <label>
-        {t('register_name')}
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-          autoComplete="name"
-        />
-      </label>
-      <label>
-        {t('register_email')}
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          autoComplete="email"
-        />
-      </label>
-      <label>
-        {t('register_password')}
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          minLength={8}
-          autoComplete="new-password"
-        />
-      </label>
-      <button type="submit" disabled={submitting}>
-        {submitting ? t('register_submitting') : t('register_submit')}
-      </button>
-      <p>
-        {t('register_have_account')} <Link to="/login">{t('register_login_link')}</Link>
-      </p>
-    </form>
+    <div className="mx-auto flex min-h-[60vh] max-w-sm flex-col justify-center px-6 py-10">
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-col gap-4 rounded border border-brand-border bg-brand-surface p-6"
+      >
+        <h1 className="text-2xl font-semibold">{t('register_title')}</h1>
+        {error && (
+          <p role="alert" className="text-sm text-brand-sale">
+            {error}
+          </p>
+        )}
+        <label className="flex flex-col gap-1 text-sm">
+          {t('register_name')}
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            autoComplete="name"
+            className="rounded border border-brand-border px-3 py-2"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-sm">
+          {t('register_email')}
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            autoComplete="email"
+            className="rounded border border-brand-border px-3 py-2"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-sm">
+          {t('register_password')}
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={8}
+            autoComplete="new-password"
+            className="rounded border border-brand-border px-3 py-2"
+          />
+        </label>
+        <button
+          type="submit"
+          disabled={submitting}
+          className="mt-2 rounded bg-brand-text px-6 py-3 text-xs uppercase tracking-wide text-white hover:bg-black disabled:opacity-50"
+        >
+          {submitting ? t('register_submitting') : t('register_submit')}
+        </button>
+        <p className="text-sm text-brand-text-muted">
+          {t('register_have_account')}{' '}
+          <Link to="/login" className="underline hover:text-brand-text">
+            {t('register_login_link')}
+          </Link>
+        </p>
+      </form>
+    </div>
   )
 }

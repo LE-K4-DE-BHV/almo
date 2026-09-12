@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router'
+import { useEffect, useState, type FormEvent } from 'react'
+import { Link, useParams, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import {
   fetchProduct,
@@ -7,11 +7,13 @@ import {
   type ProductDetail,
   type Product,
 } from '../api/catalog'
-import { fetchReviews, type Review } from '../api/reviews'
+import { fetchReviews, submitReview, type Review } from '../api/reviews'
+import { ApiError } from '../api/client'
 import { useAuth } from '../auth/useAuth'
 import { useCart } from '../cart/useCart'
 import { useWishlist } from '../wishlist/useWishlist'
 import { ProductCard } from '../components/ProductCard'
+import { HeartIcon } from '../components/icons'
 import { recordView, getRecentlyViewed } from '../recentlyViewed'
 
 function formatPrice(value: number, lang: string) {
@@ -32,10 +34,19 @@ export function ProductPage() {
   const [recentlyViewed, setRecentlyViewed] = useState<Product[]>([])
   const [activeImage, setActiveImage] = useState(0)
   const [adding, setAdding] = useState(false)
+  const [reviewRating, setReviewRating] = useState(5)
+  const [reviewComment, setReviewComment] = useState('')
+  const [reviewSubmitting, setReviewSubmitting] = useState(false)
+  const [reviewError, setReviewError] = useState<string | null>(null)
+  const [reviewSubmitted, setReviewSubmitted] = useState(false)
 
   useEffect(() => {
     setProduct(null)
     setActiveImage(0)
+    setReviewRating(5)
+    setReviewComment('')
+    setReviewError(null)
+    setReviewSubmitted(false)
     fetchProduct(productId, i18n.language).then(setProduct)
     fetchReviews(productId).then(setReviews)
   }, [productId, i18n.language])
@@ -83,6 +94,21 @@ export function ProductPage() {
       return
     }
     toggle(productId)
+  }
+
+  async function handleSubmitReview(e: FormEvent) {
+    e.preventDefault()
+    setReviewError(null)
+    setReviewSubmitting(true)
+    try {
+      const review = await submitReview(productId, reviewRating, reviewComment)
+      setReviews((prev) => [review, ...prev])
+      setReviewSubmitted(true)
+    } catch (err) {
+      setReviewError(err instanceof ApiError ? err.message : t('product_reviews_form_error_generic'))
+    } finally {
+      setReviewSubmitting(false)
+    }
   }
 
   const wishlisted = isWishlisted(productId)
@@ -180,7 +206,7 @@ export function ProductPage() {
               title={t('add_to_wishlist')}
               className={`rounded border border-brand-border px-4 ${wishlisted ? 'text-brand-sale' : 'text-brand-text-muted'}`}
             >
-              {wishlisted ? '♥' : '♡'}
+              <HeartIcon filled={wishlisted} />
             </button>
           </div>
         </div>
@@ -205,10 +231,63 @@ export function ProductPage() {
             ))}
           </ul>
         )}
-        {/* No review form yet - see Sprint 3 decision in docs/backlog.md: writing is gated on
-            having bought the product. Orders exist as of Sprint 4, but the write endpoint/form
-            itself is still a separate, not-yet-scheduled piece of work. */}
-        <p className="mt-4 text-xs text-brand-text-muted">{t('product_reviews_write_soon')}</p>
+        {user ? (
+          reviewSubmitted ? (
+            <p className="mt-6 text-sm text-brand-text-muted">{t('product_reviews_form_thanks')}</p>
+          ) : (
+            <form onSubmit={handleSubmitReview} className="mt-6 flex max-w-md flex-col gap-3">
+              <h3 className="text-sm font-semibold uppercase tracking-wide">
+                {t('product_reviews_form_title')}
+              </h3>
+              <label className="flex flex-col gap-1 text-sm">
+                {t('product_reviews_form_rating')}
+                <select
+                  value={reviewRating}
+                  onChange={(e) => setReviewRating(Number(e.target.value))}
+                  className="w-32 rounded border border-brand-border px-2 py-1.5 text-sm"
+                >
+                  {[5, 4, 3, 2, 1].map((value) => (
+                    <option key={value} value={value}>
+                      {'★'.repeat(value)}
+                      {'☆'.repeat(5 - value)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                {t('product_reviews_form_comment')}
+                <textarea
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  rows={3}
+                  maxLength={2000}
+                  className="rounded border border-brand-border px-3 py-2 text-sm"
+                />
+              </label>
+              {reviewError && (
+                <p role="alert" className="text-sm text-brand-sale">
+                  {reviewError}
+                </p>
+              )}
+              <button
+                type="submit"
+                disabled={reviewSubmitting}
+                className="self-start rounded bg-brand-text px-6 py-2 text-xs uppercase tracking-wide text-white hover:bg-black disabled:opacity-50"
+              >
+                {reviewSubmitting
+                  ? t('product_reviews_form_submitting')
+                  : t('product_reviews_form_submit')}
+              </button>
+            </form>
+          )
+        ) : (
+          <p className="mt-6 text-sm text-brand-text-muted">
+            <Link to="/login" className="underline hover:text-brand-text">
+              {t('nav_login')}
+            </Link>{' '}
+            {t('product_reviews_login_hint')}
+          </p>
+        )}
       </section>
 
       {recentlyViewed.length > 0 && (

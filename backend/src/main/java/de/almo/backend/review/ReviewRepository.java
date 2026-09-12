@@ -5,10 +5,10 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 /**
- * Read-only for now (Sprint 3, see docs/backlog.md): writing a review is gated on having bought the
- * product, which needs the orders table Sprint 4 populates - until then there's nothing real to
- * check a purchase against, so the write side isn't built yet. Sprint 5 adds admin moderation
- * (status/rating only, see UpdateReviewRequest) - still no customer-facing write endpoint.
+ * Sprint 5 added admin moderation (status/rating only, see UpdateReviewRequest). The
+ * customer-facing write path below (hasPurchased/hasReviewed/insert) was the one piece deferred
+ * since Sprint 3 - orders exist as of Sprint 4, so there's finally something real to check a
+ * purchase against.
  */
 @Repository
 public class ReviewRepository {
@@ -67,6 +67,62 @@ public class ReviewRepository {
                     rs.getString("status"),
                     rs.getTimestamp("created_at").toInstant()))
         .list();
+  }
+
+  /** Gates review submission - "bought it" means at least one order_item for this product on one
+      of this user's orders, regardless of order status (see Sprint 4/5 decisions - status here
+      tracks admin follow-up, not payment, there's nothing stronger than "they ordered it" to
+      check against). */
+  public boolean hasPurchased(long userId, long productId) {
+    Boolean result =
+        jdbcClient
+            .sql(
+                """
+                SELECT EXISTS (
+                  SELECT 1 FROM order_items oi
+                  JOIN orders o ON o.id = oi.order_id
+                  WHERE o.user_id = :userId AND oi.product_id = :productId
+                )
+                """)
+            .param("userId", userId)
+            .param("productId", productId)
+            .query(Boolean.class)
+            .single();
+    return Boolean.TRUE.equals(result);
+  }
+
+  /** One review per user per product - checked regardless of the existing review's status, so a
+      hidden review still blocks a second submission rather than silently allowing a do-over. */
+  public boolean hasReviewed(long userId, long productId) {
+    Boolean result =
+        jdbcClient
+            .sql("SELECT EXISTS (SELECT 1 FROM reviews WHERE user_id = :userId AND product_id = :productId)")
+            .param("userId", userId)
+            .param("productId", productId)
+            .query(Boolean.class)
+            .single();
+    return Boolean.TRUE.equals(result);
+  }
+
+  /** userName is passed in rather than re-joined from `users` - the caller (ReviewController)
+      already has the authenticated User on hand from the purchase/duplicate checks. */
+  public ReviewResponse insert(long productId, long userId, String userName, int rating, String comment) {
+    return jdbcClient
+        .sql(
+            """
+            INSERT INTO reviews (product_id, user_id, rating, comment)
+            VALUES (:productId, :userId, :rating, :comment)
+            RETURNING id, created_at
+            """)
+        .param("productId", productId)
+        .param("userId", userId)
+        .param("rating", rating)
+        .param("comment", comment)
+        .query(
+            (rs, rowNum) ->
+                new ReviewResponse(
+                    rs.getLong("id"), userName, rating, comment, rs.getTimestamp("created_at").toInstant()))
+        .single();
   }
 
   public boolean updateModeration(long id, ReviewStatus status, int rating) {

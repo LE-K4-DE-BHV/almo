@@ -35,7 +35,7 @@ export function Footer() {
             {t('footer_newsletter_title')}
           </h3>
           {subscribed ? (
-            <p className="text-sm text-brand-text-muted">✓</p>
+            <p className="text-sm text-brand-text-muted">{t('footer_newsletter_success')}</p>
           ) : (
             <form onSubmit={handleSubscribe} className="flex flex-col gap-2">
               <div className="flex gap-2">

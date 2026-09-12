@@ -5,13 +5,6 @@ import { useAuth } from '../auth/useAuth'
 import { useCart } from '../cart/useCart'
 import { ApiError } from '../api/client'
 
-/**
- * Still unstyled (plain browser form controls, no Tailwind) - functional since Sprint 1 to prove
- * the register/login/logout flow works end to end against the real backend, but the visual pass
- * that the rest of the storefront got in Sprint 2 never happened here. Not part of Sprint 6's
- * "close the remaining language gaps" task (see docs/backlog.md) - the strings are now translated,
- * the layout is a separate, still-open piece of work.
- */
 export function LoginPage() {
   const { t } = useTranslation()
   const [email, setEmail] = useState('')
@@ -41,38 +34,58 @@ export function LoginPage() {
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h1>{t('login_title')}</h1>
-      {error && <p role="alert">{error}</p>}
-      <label>
-        {t('login_email')}
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          autoComplete="email"
-        />
-      </label>
-      <label>
-        {t('login_password')}
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          autoComplete="current-password"
-        />
-      </label>
-      <button type="submit" disabled={submitting}>
-        {submitting ? t('login_submitting') : t('login_submit')}
-      </button>
-      <p>
-        <Link to="/forgot-password">{t('login_forgot_password')}</Link>
-      </p>
-      <p>
-        {t('login_no_account')} <Link to="/register">{t('login_register_link')}</Link>
-      </p>
-    </form>
+    <div className="mx-auto flex min-h-[60vh] max-w-sm flex-col justify-center px-6 py-10">
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-col gap-4 rounded border border-brand-border bg-brand-surface p-6"
+      >
+        <h1 className="text-2xl font-semibold">{t('login_title')}</h1>
+        {error && (
+          <p role="alert" className="text-sm text-brand-sale">
+            {error}
+          </p>
+        )}
+        <label className="flex flex-col gap-1 text-sm">
+          {t('login_email')}
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            autoComplete="email"
+            className="rounded border border-brand-border px-3 py-2"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-sm">
+          {t('login_password')}
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            autoComplete="current-password"
+            className="rounded border border-brand-border px-3 py-2"
+          />
+        </label>
+        <button
+          type="submit"
+          disabled={submitting}
+          className="mt-2 rounded bg-brand-text px-6 py-3 text-xs uppercase tracking-wide text-white hover:bg-black disabled:opacity-50"
+        >
+          {submitting ? t('login_submitting') : t('login_submit')}
+        </button>
+        <p className="text-sm text-brand-text-muted">
+          <Link to="/forgot-password" className="underline hover:text-brand-text">
+            {t('login_forgot_password')}
+          </Link>
+        </p>
+        <p className="text-sm text-brand-text-muted">
+          {t('login_no_account')}{' '}
+          <Link to="/register" className="underline hover:text-brand-text">
+            {t('login_register_link')}
+          </Link>
+        </p>
+      </form>
+    </div>
   )
 }
