@@ -1,13 +1,9 @@
-import { test, expect, uniqueEmail, addFirstProductToCart } from './fixtures'
+import { test, expect, uniqueEmail, registerNewUser, addFirstProductToCart } from './fixtures'
 
 test('a logged-in customer can complete checkout end to end', async ({ page }) => {
   const email = uniqueEmail('checkout')
 
-  await page.goto('/register')
-  await page.getByLabel('Name').fill('Checkout Tester')
-  await page.getByLabel('E-Mail').fill(email)
-  await page.getByLabel('Passwort').fill('Passw0rd!23')
-  await page.getByRole('button', { name: 'Konto erstellen' }).click()
+  await registerNewUser(page, { name: 'Checkout Tester', email, password: 'Passw0rd!23' })
   await expect(page).toHaveURL(/\/account$/)
 
   await page.goto('/shop')

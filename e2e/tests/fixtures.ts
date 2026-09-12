@@ -36,6 +36,42 @@ export function uniqueEmail(prefix: string): string {
 }
 
 /**
+ * Fills and submits the register form, waiting for the actual POST /api/auth/register round trip
+ * before returning - same reasoning as addFirstProductToCart below: a bare `.click()` only
+ * dispatches the click, it doesn't wait for the request RegisterPage's handler kicks off. Matches
+ * both success (200) and error (e.g. 409 for an already-used email) responses - callers assert on
+ * the resulting page state themselves, this only removes the request-timing race underneath that.
+ */
+export async function registerNewUser(
+  page: Page,
+  options: { name: string; email: string; password: string },
+): Promise<void> {
+  await page.goto('/register')
+  await page.getByLabel('Name').fill(options.name)
+  await page.getByLabel('E-Mail').fill(options.email)
+  await page.getByLabel('Passwort').fill(options.password)
+  await Promise.all([
+    page.waitForResponse(
+      (res) => res.url().includes('/api/auth/register') && res.request().method() === 'POST',
+    ),
+    page.getByRole('button', { name: 'Konto erstellen' }).click(),
+  ])
+}
+
+/** Same reasoning as registerNewUser above, for the login form. */
+export async function login(page: Page, email: string, password: string): Promise<void> {
+  await page.goto('/login')
+  await page.getByLabel('E-Mail').fill(email)
+  await page.getByLabel('Passwort').fill(password)
+  await Promise.all([
+    page.waitForResponse(
+      (res) => res.url().includes('/api/auth/login') && res.request().method() === 'POST',
+    ),
+    page.getByRole('button', { name: 'Einloggen' }).click(),
+  ])
+}
+
+/**
  * Adds the first product on /shop to the cart and waits for the add to actually land server-side
  * before returning. `addItem()` in CartProvider is async - clicking the button only dispatches the
  * click, it doesn't wait for the POST it triggers to finish, so navigating away right after
