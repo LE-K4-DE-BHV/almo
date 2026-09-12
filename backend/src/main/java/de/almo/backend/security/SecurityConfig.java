@@ -75,8 +75,12 @@ public class SecurityConfig {
                     // Login itself can't require being already authenticated as admin.
                     .requestMatchers(HttpMethod.POST, "/api/admin/auth/login")
                     .permitAll()
+                    // Staff-account management is the one admin area STAFF itself can't reach -
+                    // must be listed before the broader anyRequest() rule below.
+                    .requestMatchers("/api/admin/staff/**")
+                    .hasRole("ADMIN")
                     .anyRequest()
-                    .hasRole("ADMIN"));
+                    .hasAnyRole("ADMIN", "STAFF"));
     return http.build();
   }
 

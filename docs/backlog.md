@@ -302,6 +302,50 @@ Da das gemeldete Verhalten spezifisch iOS-Safari + normales Scrollen ist (kein R
 
 **Das ist eine Absicherung, kein bestätigter Fix** - bitte auf einem echten iPhone nachtesten, ob sich das Wackeln dadurch erledigt hat. Falls nicht: als Nächstes bräuchte es entweder ein echtes iPhone/Safari zum Testen, oder Zugriff auf einen Rechner, auf dem `playwright install-deps webkit` mit Root-Rechten laufen kann, um das WebKit-spezifische Rendering direkt zu inspizieren.
 
+## nginx-Cache-Header für index.html (2026-09-12)
+
+Auslöser: Admin-Profil-Feature war schon deployed (verifiziert: Commit auf dem Server, JS-Bundle enthält den neuen Code, `/admin/profile` liefert 200), aber im Browser nicht sichtbar - kein neuer nginx-Eintrag nötig für neue React-Router-Routen (VPS-nginx hat einen Catch-all auf den Frontend-Container, der Container selbst hat ein SPA-Fallback via `try_files ... /index.html`). Ursache war ein nicht neu geladener Browser-Tab von vor dem Deploy - normales SPA-Verhalten, aber `frontend/nginx.conf` setzte bis jetzt gar keine `Cache-Control`-Header, was das Risiko erhöht, dass ein Browser eine alte `index.html` (mit Verweisen auf alte, nicht mehr existierende gehashte JS/CSS-Dateien) länger als nötig behält.
+
+Gefixt: `/assets/` (Vite-content-gehashte Dateien, ändern sich nie unter gleichem Namen) bekommt `Cache-Control: public, max-age=31536000, immutable`; `index.html` bekommt `Cache-Control: no-cache` (erzwingt Revalidierung bei jedem Ladevorgang, verhindert aber nicht das schnelle `ETag`-basierte Conditional-GET). Mit `curl -I` gegen einen frischen Testcontainer gegengeprüft, Routing (inkl. `/admin/profile`) funktioniert unverändert.
+
+## Passwort-Reset-Mail-Flow gefixt (2026-09-12)
+
+**Bug:** Passwort-Reset-Mails kamen nie an, ohne dass irgendwo ein Fehler sichtbar war.
+
+**Root Cause** (bestätigt über Brevos eigenes Event-Log, `GET /v3/smtp/statistics/events`): Der Absender `no-reply@almo-group.vn-nspace.de` (Compose-Default, kein `BREVO_SENDER_EMAIL` in `.env` gesetzt) war bei Brevo nicht als Sender-Domain authentifiziert. Brevos API nimmt den Sende-Request trotzdem mit 201 an (deshalb loggt `BrevoMailService` keinen Fehler - der eigentliche Request an Brevo schlägt nicht fehl), lehnt die Zustellung aber asynchron danach ab: `"Sending has been rejected because the sender you used ... is not valid. Validate your sender or authenticate your domain"`. Kein Code-Bug, reine Konfigurationslücke im Brevo-Account.
+
+**Fix:** `vn-nspace.de` (übergeordnete Domain) wurde bei Brevo per DNS authentifiziert (DKIM/TXT/DMARC-Records bei Strato ergänzt). `.env` bekam `BREVO_SENDER_EMAIL=no-reply@vn-nspace.de`, Backend neu gestartet. Über den echten `POST /api/auth/password-reset/request`-Endpoint gegengetestet - Brevos Event-Log zeigt `"event":"delivered"` für die echte Reset-Mail.
+
+**Offen:** `almo-group.vn-nspace.de` (die eigentliche Branding-Subdomain) ist separat bei Brevo angelegt, aber noch nicht authentifiziert (eigene DKIM-Records nötig, verwechselbar mit Brevos "Branded/Tracking-Domain"-Feature, das etwas anderes ist). Sobald das durch ist: `BREVO_SENDER_EMAIL` auf `no-reply@almo-group.vn-nspace.de` umstellen für sauberes Branding - rein konfigurativ, kein Code-Änderung nötig.
+
+## Ausfall: DNS-A-Record für almo-group.vn-nspace.de fehlte (2026-09-12)
+
+**Symptom:** Ganze Seite nicht erreichbar ("ist down").
+
+**Root Cause** (bestätigt gegen zwei öffentliche DNS-Resolver, Google 8.8.8.8 und Cloudflare 1.1.1.1): kein A-Record mehr für `almo-group.vn-nspace.de` - reines DNS-Problem, kein Docker-/nginx-Fehler. Server/Container liefen die ganze Zeit stabil (`docker ps`, lokale curl-Checks auf 8093/8094 immer 200), die geteilte VPS-nginx lief ebenfalls durchgehend (andere Domains auf demselben Server, `vn-nspace.de`/`vn-nspace.codes`, blieben erreichbar). Zeitlich fällt der Ausfall mit dem Eintragen der Brevo-Domain-Authentifizierungs-Records für die `almo-group`-Subdomain zusammen - naheliegend, dass der bestehende A-Record dabei versehentlich gelöscht/überschrieben wurde.
+
+**Fix:** A-Record `almo-group` → `217.160.66.109` (Server-IP, identisch mit `vn-nspace.de`) muss bei Strato wiederhergestellt werden - reine DNS-Änderung, kein Server-Neustart nötig, da an Docker/nginx nichts kaputt war.
+
+## Mehrere Admin-Nutzer: Admin + Mitarbeiter-Rolle (2026-09-12)
+
+Ziel: Admin-Dashboard soll mehrere Nutzer vertragen. Admins und Mitarbeiter (STAFF) können beide alles verwalten (Produkte/Kategorien/Bestellungen/Reviews), aber nur Admins können Mitarbeiter-Accounts anlegen/verwalten/entfernen.
+
+### Entscheidungen (per Rückfrage geklärt, vor der Umsetzung)
+
+- **Account-Erstellung**: Admin legt Name+E-Mail direkt an, System setzt einen zufälligen, nie genutzten Passwort-Hash und schickt sofort den bestehenden Passwort-Reset-Mail-Flow los - der neue Mitarbeiter setzt sein eigenes Passwort selbst, kein Passwort geht durch den Admin.
+- **Admin-Reichweite**: Admins verwalten nur Mitarbeiter-Accounts, nicht andere Admin-Accounts - der Staff-Lösch-/Verwaltungsendpoint filtert explizit auf `role = STAFF`, ein Versuch, eine Admin-ID darüber zu löschen, liefert 404 (nicht 403 - verrät nicht, dass die ID existiert).
+- **Selbst-Löschung**: Mitarbeiter können ihren Account nicht selbst löschen (kein UI-Button, siehe unten - Backend-seitig bleibt `DELETE /api/auth/me` zwar technisch erreichbar für jede Rolle, aber das UI bietet es Mitarbeitern nicht an; explizite Backend-Sperre war nicht Teil der Anfrage und wurde bewusst nicht ergänzt, um den Scope nicht zu sprengen - siehe "Bewusst zurückgestellt").
+
+### Umsetzung
+
+- **`Role`-Enum** um `STAFF` erweitert (`V6__add_staff_role.sql` passt den CHECK-Constraint an).
+- **`SecurityConfig`**: `/api/admin/staff/**` bleibt `hasRole("ADMIN")`, der Rest von `/api/admin/**` wechselt von `hasRole("ADMIN")` zu `hasAnyRole("ADMIN", "STAFF")`. `AdminAuthController` akzeptiert jetzt auch `ROLE_STAFF` beim Admin-Login.
+- **`AdminStaffController`** (`GET/POST /api/admin/staff`, `DELETE /api/admin/staff/{id}`) - Erstellen/Auflisten/Entfernen von Mitarbeiter-Accounts, ADMIN-only.
+- **Echter Sicherheits-Bug beim Testen gefunden und gefixt**: Ein per Staff-Endpoint gelöschter Mitarbeiter-Account blieb mit seiner bestehenden Session weiter voll zugriffsberechtigt, bis die Session natürlich abgelaufen wäre - das Löschen der DB-Zeile allein beendet keine laufende Redis-Session. Gefixt durch Umstellung auf Spring Sessions "indexed" Redis-Repository (`spring.session.data.redis.repository-type=indexed` - der Property-Name aus der offiziellen Konfigurations-Metadaten-Doku, `spring.session.redis.repository-type`, wird vom tatsächlichen `@ConditionalOnProperty` in der Autoconfiguration-Klasse **nicht** gelesen; gegen den Bytecode der Klasse verifiziert, nicht geraten) plus `AuthService.deleteStaff`, das nach dem Löschen aktiv alle Sessions des Nutzers per `FindByIndexNameSessionRepository.findByPrincipalName(...)` sucht und beendet. Mit einem echten End-to-End-Test verifiziert: Mitarbeiter-Session ist sofort (401/403) tot, direkt nach dem Löschen, nicht erst nach Session-Ablauf.
+- Frontend: neue `AdminStaffPage.tsx` unter `/admin/staff` (nur im Nav sichtbar für `role === 'ADMIN'`, zusätzlich mit eigenem Redirect-Guard falls eine Mitarbeiter-Person die URL direkt aufruft - Backend blockt ohnehin unabhängig davon). `RequireAdmin` lässt jetzt auch STAFF in den Admin-Bereich.
+
+Durchgetestet gegen einen isolierten Test-Stack: Admin erstellt Mitarbeiter (201) → doppelte E-Mail (409) → Mitarbeiter setzt Passwort über den Reset-Link → Mitarbeiter-Login über den Admin-Login-Endpoint (STAFF-Rolle akzeptiert) → Mitarbeiter hat Zugriff auf den allgemeinen Admin-Bereich (Produkte, 200) → Mitarbeiter bekommt 403 bei `/api/admin/staff` (lesen und erstellen) → Admin löscht Mitarbeiter (204) → Mitarbeiter-Session sofort tot (401/403) → Versuch, einen Admin-Account über den Staff-Endpoint zu löschen, liefert 404.
+
 ## Bewusst zurückgestellt (nicht in obigen Sprints)
 
 Siehe Spec-Abschnitt "Bewusst außerhalb des MVP-Scopes": Rechtsseiten (Impressum/Datenschutz/AGB/Widerruf), Cookie-Consent, DSGVO-Datenexport, MwSt.-Hinweis, Object-Storage-Alternativen zu Cloudinary, echtes Payment (Stripe o.ä.). Kommen als eigene Sprints, sobald ein Gewerbe existiert bzw. der Shop live geht.

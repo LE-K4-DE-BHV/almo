@@ -20,6 +20,7 @@ import { AdminCategoriesPage } from './pages/admin/AdminCategoriesPage'
 import { AdminOrdersPage } from './pages/admin/AdminOrdersPage'
 import { AdminReviewsPage } from './pages/admin/AdminReviewsPage'
 import { AdminProfilePage } from './pages/admin/AdminProfilePage'
+import { AdminStaffPage } from './pages/admin/AdminStaffPage'
 import { RequireAuth } from './auth/RequireAuth'
 import { RequireAdmin } from './auth/RequireAdmin'
 
@@ -79,6 +80,7 @@ export function AppRouter() {
         <Route path="orders" element={<AdminOrdersPage />} />
         <Route path="reviews" element={<AdminReviewsPage />} />
         <Route path="profile" element={<AdminProfilePage />} />
+        <Route path="staff" element={<AdminStaffPage />} />
       </Route>
     </Routes>
   )

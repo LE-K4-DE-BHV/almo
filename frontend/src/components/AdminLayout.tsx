@@ -42,6 +42,11 @@ export function AdminLayout() {
               <NavLink to="/admin/profile" className={navLinkClass}>
                 Profile
               </NavLink>
+              {user?.role === 'ADMIN' && (
+                <NavLink to="/admin/staff" className={navLinkClass}>
+                  Staff
+                </NavLink>
+              )}
             </nav>
           </div>
           <div className="flex items-center gap-3 text-sm">

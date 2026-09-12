@@ -1,5 +1,6 @@
 package de.almo.backend.auth;
 
+import de.almo.backend.auth.dto.CreateStaffRequest;
 import de.almo.backend.auth.dto.LoginRequest;
 import de.almo.backend.auth.dto.RegisterRequest;
 import de.almo.backend.auth.dto.UpdateProfileRequest;
@@ -13,6 +14,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
+import java.util.List;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -23,6 +25,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.session.FindByIndexNameSessionRepository;
+import org.springframework.session.Session;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,6 +48,7 @@ public class AuthService {
   private final UserDetailsService userDetailsService;
   private final MailService mailService;
   private final AuthProperties authProperties;
+  private final FindByIndexNameSessionRepository<? extends Session> sessionRepository;
 
   public AuthService(
       UserRepository userRepository,
@@ -53,7 +58,8 @@ public class AuthService {
       SecurityContextRepository securityContextRepository,
       UserDetailsService userDetailsService,
       MailService mailService,
-      AuthProperties authProperties) {
+      AuthProperties authProperties,
+      FindByIndexNameSessionRepository<? extends Session> sessionRepository) {
     this.userRepository = userRepository;
     this.resetTokenRepository = resetTokenRepository;
     this.passwordEncoder = passwordEncoder;
@@ -62,6 +68,7 @@ public class AuthService {
     this.userDetailsService = userDetailsService;
     this.mailService = mailService;
     this.authProperties = authProperties;
+    this.sessionRepository = sessionRepository;
   }
 
   @Transactional
@@ -164,6 +171,50 @@ public class AuthService {
     }
 
     return saved;
+  }
+
+  /**
+   * Admin-only (see SecurityConfig) - creates a STAFF account with an unusable random password hash
+   * and immediately sends the same reset-your-password email {@link #requestPasswordReset} sends,
+   * so the new staff member sets their own real password on first login rather than an admin ever
+   * knowing or choosing it for them.
+   */
+  @Transactional
+  public User createStaff(CreateStaffRequest request) {
+    String email = request.email().trim().toLowerCase();
+    if (userRepository.existsByEmail(email)) {
+      throw new EmailAlreadyRegisteredException();
+    }
+    User user =
+        new User(email, passwordEncoder.encode(generateToken()), request.name().trim(), Role.STAFF);
+    User saved = userRepository.save(user);
+    requestPasswordReset(email);
+    return saved;
+  }
+
+  public List<User> listStaff() {
+    return userRepository.findByRoleOrderByCreatedAtDesc(Role.STAFF);
+  }
+
+  @Transactional
+  public void deleteStaff(long id) {
+    User user =
+        userRepository
+            .findById(id)
+            .filter(u -> u.getRole() == Role.STAFF)
+            .orElseThrow(StaffNotFoundException::new);
+    userRepository.delete(user);
+
+    // Deleting the row alone leaves any session this staff member is already logged in with
+    // (on any device) fully valid until it naturally expires - the whole point of removing a
+    // staff account is that their access stops immediately, not eventually. Requires the
+    // "indexed" Redis session repository (see application.properties) to look sessions up by
+    // principal name; Spring Session resolves that name from the same SPRING_SECURITY_CONTEXT
+    // session attribute HttpSessionSecurityContextRepository already writes on login.
+    sessionRepository
+        .findByPrincipalName(user.getEmail())
+        .keySet()
+        .forEach(sessionRepository::deleteById);
   }
 
   public User findByEmail(String email) {

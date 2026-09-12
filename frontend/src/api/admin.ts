@@ -121,3 +121,17 @@ export const updateAdminOrderStatus = (id: number, status: AdminOrder['status'])
 export const fetchAdminReviews = () => apiFetch<AdminReview[]>('/api/admin/reviews')
 export const updateAdminReview = (id: number, status: AdminReview['status'], rating: number) =>
   apiFetch<void>(`/api/admin/reviews/${id}`, { method: 'PATCH', body: { status, rating } })
+
+// Staff - ADMIN-only on the backend (SecurityConfig), not reachable by a STAFF session
+export type AdminStaff = {
+  id: number
+  email: string
+  name: string
+  createdAt: string
+}
+
+export const fetchAdminStaff = () => apiFetch<AdminStaff[]>('/api/admin/staff')
+export const createAdminStaff = (email: string, name: string) =>
+  apiFetch<AdminStaff>('/api/admin/staff', { method: 'POST', body: { email, name } })
+export const deleteAdminStaff = (id: number) =>
+  apiFetch<void>(`/api/admin/staff/${id}`, { method: 'DELETE' })

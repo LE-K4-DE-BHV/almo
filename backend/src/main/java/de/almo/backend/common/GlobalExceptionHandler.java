@@ -3,6 +3,7 @@ package de.almo.backend.common;
 import de.almo.backend.auth.AccountHasOrdersException;
 import de.almo.backend.auth.EmailAlreadyRegisteredException;
 import de.almo.backend.auth.InvalidResetTokenException;
+import de.almo.backend.auth.StaffNotFoundException;
 import de.almo.backend.cart.CartItemNotFoundException;
 import de.almo.backend.catalog.ProductNotFoundException;
 import de.almo.backend.catalog.admin.CategoryInUseException;
@@ -39,6 +40,11 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(InvalidResetTokenException.class)
   public ResponseEntity<ApiError> handleInvalidResetToken(InvalidResetTokenException e) {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiError(e.getMessage()));
+  }
+
+  @ExceptionHandler(StaffNotFoundException.class)
+  public ResponseEntity<ApiError> handleStaffNotFound(StaffNotFoundException e) {
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiError(e.getMessage()));
   }
 
   @ExceptionHandler(ProductNotFoundException.class)

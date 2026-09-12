@@ -39,7 +39,12 @@ public class AdminAuthController {
       HttpServletResponse httpResponse) {
     Authentication authentication = authService.authenticate(request);
 
-    if (!authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"))) {
+    // STAFF logs in through the same admin form as ADMIN - both belong in the admin area (see
+    // SecurityConfig), only staff-account management itself stays ADMIN-only.
+    boolean isAdminOrStaff =
+        authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"))
+            || authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_STAFF"));
+    if (!isAdminOrStaff) {
       // Same 401 shape as a wrong password (see GlobalExceptionHandler) - a valid customer
       // credential must not tell the caller "your password is right, you're just not an admin".
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
