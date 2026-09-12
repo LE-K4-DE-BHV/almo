@@ -292,6 +292,16 @@ Auslöser: "die meisten werden das auf dem Smartphone nutzen, aktuell ist es da 
 
 Verifiziert per Playwright-Screenshots in einem isolierten Test-Stack (iPhone 13 + iPhone SE Viewports), danach Frontend-Lint/Build/Vitest-Suite (8/8) gegengeprüft, Produktion unberührt.
 
+## iOS-Wackeln beim Scrollen (2026-09-12)
+
+Nachtrag zum Mobile-Audit oben. Feedback nach dem ersten Audit: "bewegen sich immer so nach links und rechts, fühlt sich komisch an" - auf iPhone/Safari, beim ganz normalen Hoch-/Runterscrollen (nicht beim Rand-Wischen).
+
+**Root Cause nicht abschließend isoliert.** Systematisch durchgetestet (per Playwright/Chromium, `document.documentElement.scrollWidth` vs. `window.innerWidth` auf allen Hauptseiten, in DE/EN/FR, mit geöffnetem Mini-Cart-Flyout, und mit einem absichtlich sehr langen Produktnamen um einen Flexbox-`truncate`-Bug zu provozieren): kein einziges Mal ein horizontales Overflow gefunden. WebKit (Safaris Engine) ließ sich in dieser Umgebung nicht testen - `npx playwright install webkit` lädt zwar das Binary, aber `webkit.launch()` scheitert an fehlenden System-Bibliotheken (`libgtk-4`, `libgraphene-1.0`, ...), deren Installation Root-Rechte auf der Maschine bräuchte.
+
+Da das gemeldete Verhalten spezifisch iOS-Safari + normales Scrollen ist (kein Rand-Wisch-Verhalten, das auf die "Zurück"-Geste hindeuten würde), als Absicherung in `frontend/src/index.css` ergänzt: `overflow-x: hidden` und `overscroll-behavior-x: none` auf `html`. Das ist eine Standard-Härtung gegen genau dieses Symptom (seitliches Rubberband-Wackeln auf iOS Safari), verhindert aber nichts Bestehendes, da die App ohnehin keine bewusst horizontal scrollbaren Bereiche hat (`overflow-x-auto` kommt im ganzen Frontend nicht vor).
+
+**Das ist eine Absicherung, kein bestätigter Fix** - bitte auf einem echten iPhone nachtesten, ob sich das Wackeln dadurch erledigt hat. Falls nicht: als Nächstes bräuchte es entweder ein echtes iPhone/Safari zum Testen, oder Zugriff auf einen Rechner, auf dem `playwright install-deps webkit` mit Root-Rechten laufen kann, um das WebKit-spezifische Rendering direkt zu inspizieren.
+
 ## Bewusst zurückgestellt (nicht in obigen Sprints)
 
 Siehe Spec-Abschnitt "Bewusst außerhalb des MVP-Scopes": Rechtsseiten (Impressum/Datenschutz/AGB/Widerruf), Cookie-Consent, DSGVO-Datenexport, MwSt.-Hinweis, Object-Storage-Alternativen zu Cloudinary, echtes Payment (Stripe o.ä.). Kommen als eigene Sprints, sobald ein Gewerbe existiert bzw. der Shop live geht.

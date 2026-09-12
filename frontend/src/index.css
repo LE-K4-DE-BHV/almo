@@ -21,6 +21,17 @@
    live inside a layer) regardless of selector specificity - an unlayered `a { color: inherit }`
    would silently win over every text-* utility on every link in the app. */
 @layer base {
+  html {
+    /* Belt-and-suspenders against horizontal scroll: no single overflowing element was found
+       during the mobile audit (docs/backlog.md), but this is the standard hardening against it
+       regardless, and disables iOS Safari's horizontal rubber-band/swipe-navigation bounce, which
+       is the most likely cause of the "page shifts left/right while scrolling" report on iPhone -
+       WebKit couldn't be tested directly in this environment (missing system libs, see
+       docs/backlog.md), so this needs confirming on a real device. */
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+  }
+
   body {
     @apply bg-brand-bg text-brand-text font-brand antialiased;
   }
