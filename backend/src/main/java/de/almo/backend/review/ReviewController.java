@@ -15,10 +15,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Mounted under /api/products so GET is covered by SecurityConfig's existing
- * "GET /api/products/**" permitAll rule - no separate security rule needed for that path. POST
- * falls through to the customer chain's default "anyRequest().authenticated()" instead, same as
- * the wishlist - reviewing requires an account.
+ * Mounted under /api/products so GET is covered by SecurityConfig's existing "GET /api/products/**"
+ * permitAll rule - no separate security rule needed for that path. POST falls through to the
+ * customer chain's default "anyRequest().authenticated()" instead, same as the wishlist - reviewing
+ * requires an account.
  */
 @RestController
 @RequestMapping("/api/products/{productId}/reviews")
@@ -50,7 +50,8 @@ public class ReviewController {
       throw new AlreadyReviewedException();
     }
     ReviewResponse response =
-        reviewRepository.insert(productId, user.getId(), user.getName(), body.rating(), body.comment());
+        reviewRepository.insert(
+            productId, user.getId(), user.getName(), body.rating(), body.comment());
     return ResponseEntity.status(HttpStatus.CREATED).body(response);
   }
 

@@ -69,10 +69,12 @@ public class ReviewRepository {
         .list();
   }
 
-  /** Gates review submission - "bought it" means at least one order_item for this product on one
-      of this user's orders, regardless of order status (see Sprint 4/5 decisions - status here
-      tracks admin follow-up, not payment, there's nothing stronger than "they ordered it" to
-      check against). */
+  /**
+   * Gates review submission - "bought it" means at least one order_item for this product on one of
+   * this user's orders, regardless of order status (see Sprint 4/5 decisions - status here tracks
+   * admin follow-up, not payment, there's nothing stronger than "they ordered it" to check
+   * against).
+   */
   public boolean hasPurchased(long userId, long productId) {
     Boolean result =
         jdbcClient
@@ -91,12 +93,15 @@ public class ReviewRepository {
     return Boolean.TRUE.equals(result);
   }
 
-  /** One review per user per product - checked regardless of the existing review's status, so a
-      hidden review still blocks a second submission rather than silently allowing a do-over. */
+  /**
+   * One review per user per product - checked regardless of the existing review's status, so a
+   * hidden review still blocks a second submission rather than silently allowing a do-over.
+   */
   public boolean hasReviewed(long userId, long productId) {
     Boolean result =
         jdbcClient
-            .sql("SELECT EXISTS (SELECT 1 FROM reviews WHERE user_id = :userId AND product_id = :productId)")
+            .sql(
+                "SELECT EXISTS (SELECT 1 FROM reviews WHERE user_id = :userId AND product_id = :productId)")
             .param("userId", userId)
             .param("productId", productId)
             .query(Boolean.class)
@@ -104,9 +109,12 @@ public class ReviewRepository {
     return Boolean.TRUE.equals(result);
   }
 
-  /** userName is passed in rather than re-joined from `users` - the caller (ReviewController)
-      already has the authenticated User on hand from the purchase/duplicate checks. */
-  public ReviewResponse insert(long productId, long userId, String userName, int rating, String comment) {
+  /**
+   * userName is passed in rather than re-joined from `users` - the caller (ReviewController)
+   * already has the authenticated User on hand from the purchase/duplicate checks.
+   */
+  public ReviewResponse insert(
+      long productId, long userId, String userName, int rating, String comment) {
     return jdbcClient
         .sql(
             """
@@ -121,7 +129,11 @@ public class ReviewRepository {
         .query(
             (rs, rowNum) ->
                 new ReviewResponse(
-                    rs.getLong("id"), userName, rating, comment, rs.getTimestamp("created_at").toInstant()))
+                    rs.getLong("id"),
+                    userName,
+                    rating,
+                    comment,
+                    rs.getTimestamp("created_at").toInstant()))
         .single();
   }
 
